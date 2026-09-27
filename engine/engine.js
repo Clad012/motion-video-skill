@@ -211,7 +211,7 @@
   }
 
   /* ---------------------------------------------------------------- timeline */
-  const DEFAULT_LEN = { pileup: 3, title: 2.4, fan: 3, card: 2.4, chat: 4.2, list: 3.6, grid: 4.2, logo: 3.6 };
+  const DEFAULT_LEN = { pileup: 3, title: 2.4, fan: 3, card: 2.4, chat: 4.2, cards: 4.2, stats: 3.6, checklist: 4.2, compare: 4.2, prompt: 4.2, list: 3.6, grid: 4.2, logo: 3.6 };
   const DEFAULT_VOICE_AT = { card: 0.45, logo: 0.75 };
   const scenes = S.scenes.map((raw, index) => ({ ...raw, index, key: raw.id ?? `s${index + 1}` }));
   let cursor = 0;
@@ -369,8 +369,9 @@
   /* ---- title lines: shared by the title and fan scenes. */
   function titleLines(sc, t, area) {
     const lines = sc.lines ?? [];
-    const out = inBack(prog(t, sc.end - 0.45, sc.end - 0.05));
-    const layouts = lines.map((ln) => fit(ln.text, ln.weight ?? 800, (ln.size ?? (ln.big ? 240 : ln.breathe ? 170 : 130)) * U, TEXT_ROOM, -0.03, MIN_TITLE * U, `scene ${sc.key}: title line`));
+    const out = inBack(prog(t, sc.end - 0.26, sc.end));
+    // A line may not shrink below 72 px; a line that asks for a smaller size may shrink 15% from it (never under 48 px).
+    const layouts = lines.map((ln) => fit(ln.text, ln.weight ?? 800, (ln.size ?? (ln.big ? 240 : ln.breathe ? 170 : 130)) * U, TEXT_ROOM, -0.03, (ln.size ? Math.max(48, Math.min(MIN_TITLE, ln.size * 0.85)) : MIN_TITLE) * U, `scene ${sc.key}: title line`));
     const gap = 30 * U;
     const total = layouts.reduce((a, L, k) => (lines[k].breathe ? a : a + L.size * 0.95 + gap), -gap);
     let y = area.center - total / 2;
@@ -580,44 +581,45 @@
   const promptStart = (sc) => (sc.v ? sc.voiceAt : 0.5);
   const promptTypeTime = (sc) => Math.min(1.2, Math.max(0.4, String(sc.prompt).length / 70));
   function drawPrompt(sc, t, u, B, c, below, out) {
-    const x = PORTRAIT ? CX : W * 0.7;
-    const pw = PORTRAIT ? Math.min(W * 0.88, 960 * U) : W * 0.5;
-    const top = PORTRAIT ? below + 10 * U : H * 0.16;
-    const bottomLimit = PORTRAIT ? H * 0.83 : H * 0.84;
+    if (PORTRAIT) return drawPromptPanel(sc, t, u, c, { x: CX, pw: Math.min(W * 0.88, 960 * U), top: below + 10 * U, bottomLimit: H * 0.83, size: 46 * U }, out);
+    return drawPromptPanel(sc, t, u, c, { x: W * 0.7, pw: W * 0.5, top: H * 0.16, bottomLimit: H * 0.84, size: 46 * U }, out);
+  }
+  /** The prompt panel: a label chip and the text, typed out within 1.2 s. Returns its bottom edge. */
+  function drawPromptPanel(sc, t, u, c, { x, pw, top, bottomLimit, size }, out) {
     const pad = 36 * U, labelH = 56 * U;
-    const maxLines = Math.max(2, Math.floor((bottomLimit - top - pad * 2 - labelH) / (46 * U * 1.3)));
-    const wr = wrap(sc.prompt, 600, 46 * U, MIN_TEXT * U, pw - pad * 2, maxLines, `scene ${sc.key}: prompt`);
+    const maxLines = Math.max(2, Math.floor((bottomLimit - top - pad * 2 - labelH) / (size * 1.3)));
+    const wr = wrap(sc.prompt, 600, size, MIN_TEXT * U, pw - pad * 2, maxLines, `scene ${sc.key}: prompt`);
     const ph = pad * 2 + labelH + wr.lines.length * wr.size * 1.3;
     safe(sc, top, top + ph, "the prompt panel");
     const appear = outBack(prog(u, promptStart(sc) - 0.25, promptStart(sc) + 0.05), 1.6) * (1 - out);
-    if (appear <= 0.001) return;
+    if (appear <= 0.001) return top + ph;
     // Typed fast, so the whole prompt is readable for most of the scene.
     const shown = Math.floor(clamp((u - promptStart(sc)) / promptTypeTime(sc)) * String(sc.prompt).length);
     let left = shown;
     const lines = wr.lines.map((l, k) => { const take = Math.max(0, Math.min(l.length, left)); left -= l.length + (k < wr.lines.length - 1 ? 1 : 0); return l.slice(0, take); });
     const typing = shown < String(sc.prompt).length;
     const label = onFill(c, `scene ${sc.key}: prompt label`);
-    let s = `<g transform="translate(${f1(x)} ${f1(top)}) scale(${appear.toFixed(3)})" >`;
-    s += `<rect x="${f1(-pw / 2)}" y="${f1(8 * U)}" width="${f1(pw)}" height="${f1(ph)}" rx="${f1(34 * U)}" fill="${INK}" opacity=".14"/>`;
-    s += `<rect x="${f1(-pw / 2)}" y="0" width="${f1(pw)}" height="${f1(ph)}" rx="${f1(34 * U)}" fill="#fff"/>`;
+    let s2 = `<g transform="translate(${f1(x)} ${f1(top)}) scale(${appear.toFixed(3)})">`;
+    s2 += uiCard(0, ph / 2, pw, ph, { radius: 34 * U });
     const lw = measure(labels.prompt, 800, 30 * U) + 36 * U;
-    s += `<rect x="${f1(-pw / 2 + pad)}" y="${f1(pad - 6 * U)}" width="${f1(lw)}" height="${f1(46 * U)}" rx="${f1(23 * U)}" fill="${label.fill}"/>`;
-    s += `<text x="${f1(-pw / 2 + pad + lw / 2)}" y="${f1(pad + 27 * U)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(30 * U)}" fill="${label.text}">${esc(labels.prompt)}</text>`;
+    s2 += `<rect x="${f1(-pw / 2 + pad)}" y="${f1(pad - 6 * U)}" width="${f1(lw)}" height="${f1(46 * U)}" rx="${f1(23 * U)}" fill="${label.fill}"/>`;
+    s2 += `<text x="${f1(-pw / 2 + pad + lw / 2)}" y="${f1(pad + 27 * U)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(30 * U)}" fill="${label.text}">${esc(labels.prompt)}</text>`;
     const y0 = pad + labelH + wr.size * 0.95;
-    s += textBlock(lines, -pw / 2 + pad, y0, wr.size, 600, INK, { anchor: "start", lh: 1.3 });
+    s2 += textBlock(lines, -pw / 2 + pad, y0, wr.size, 600, INK, { anchor: "start", lh: 1.3 });
     if (typing && Math.floor(t * 3) % 2 === 0) {
       const li = lines.reduce((acc, l, k) => (l.length || k === 0 ? k : acc), 0);
       const cx2 = -pw / 2 + pad + measure(lines[li], 600, wr.size) + 6 * U;
-      s += `<rect x="${f1(cx2)}" y="${f1(y0 + li * wr.size * 1.3 - wr.size * 0.8)}" width="${f1(5 * U)}" height="${f1(wr.size)}" fill="${readable(c, "#ffffff")}"/>`;
+      s2 += `<rect x="${f1(cx2)}" y="${f1(y0 + li * wr.size * 1.3 - wr.size * 0.8)}" width="${f1(5 * U)}" height="${f1(wr.size)}" fill="${readable(c, "#ffffff")}"/>`;
     }
-    front += s + "</g>";
+    front += s2 + "</g>";
+    return top + ph;
   }
 
   /* ---- chat: a chat window where messages appear, with an optional stamp slammed on top. */
   SCENES.chat = {
     render(sc, t) {
       titleLines(sc, t, { center: PORTRAIT ? H * 0.15 : H * 0.13 });
-      const out = inBack(prog(t, sc.end - 0.35, sc.end));
+      const out = inBack(prog(t, sc.end - 0.24, sc.end));
       const pw = Math.min(W * 0.88, (PORTRAIT ? 960 : 1300) * U);
       const areaTop = PORTRAIT ? H * 0.27 : H * 0.26, areaBottom = PORTRAIT ? H * 0.82 : H * 0.9;
       const appear = outBack(prog(t, early(sc, sc.start + 0.05), early(sc, sc.start + 0.05) + 0.35), 1.4);
@@ -684,6 +686,349 @@
       });
       if (sc.stamp) { const t0 = when(sc, sc.stamp.at, sc.len * 0.6); add(t0, "slam", { gain: 0.9 }); add(t0 + 0.02, "boing", { pitch: 0.6, gain: 0.5 }); }
       add(sc.end - 0.35, "whoosh", { dur: 0.45, gain: 0.5 });
+    },
+  };
+
+  /* ---------------------------------------------------------------- UI kit: icons and cards */
+  // Line icons on a 24-unit grid, stroked; drawn, so no image is needed.
+  const ICONS = {
+    check: "M5 12.5l4.5 4.5L19 7.5",
+    x: "M6.5 6.5l11 11M17.5 6.5l-11 11",
+    clock: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M12 7.5v5l3.5 2",
+    bolt: "M13 2.5L5 13.5h6l-1 8l8-11h-6z",
+    star: "M12 3l2.7 5.6l6.1.8l-4.4 4.3l1 6.1L12 17l-5.4 2.8l1-6.1L3.2 9.4l6.1-.8z",
+    bell: "M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15zM10 20a2 2 0 0 0 4 0",
+    chart: "M4 20.5h16M7 17v-5M12 17V7M17 17v-8",
+    calendar: "M4.5 6.5h15v13h-15zM4.5 10.5h15M8.5 4v4M15.5 4v4",
+    chat: "M4.5 5.5h15v10h-8l-4.5 3.5v-3.5h-2.5z",
+    lock: "M6.5 11h11v9h-11zM8.5 11V8a3.5 3.5 0 0 1 7 0v3",
+    heart: "M12 19.5s-7.5-4.6-7.5-10a4 4 0 0 1 7.5-2a4 4 0 0 1 7.5 2c0 5.4-7.5 10-7.5 10z",
+    target: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M12 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9M12 11.2a.8.8 0 1 0 0 1.6a.8.8 0 1 0 0-1.6",
+    mail: "M3.5 6.5h17v11h-17zM3.5 7l8.5 6.5L20.5 7",
+    list: "M9 7h11M9 12h11M9 17h11M4.5 7h.5M4.5 12h.5M4.5 17h.5",
+    users: "M9 11a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 6.5M18.5 14.8c1.8.7 3 2.5 3 5.2",
+    search: "M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13M15.5 15.5l5 5",
+    up: "M12 19.5v-15M6 10.5l6-6l6 6",
+    rocket: "M12 3c3 2 4.5 5.5 4.5 9.5l-2.5 3h-4l-2.5-3C7.5 8.5 9 5 12 3zM9.5 15.5l-3 3.5M14.5 15.5l3 3.5M12 9a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3",
+  };
+  /** An icon tile: rounded square in `color`, icon (or a short glyph) in its readable colour. */
+  function iconTile(icon, x, y, size, color, what) {
+    const o = onFill(col(color), what);
+    let s = `<rect x="${f1(x - size / 2)}" y="${f1(y - size / 2)}" width="${f1(size)}" height="${f1(size)}" rx="${f1(size * 0.28)}" fill="${o.fill}"/>`;
+    if (ICONS[icon]) {
+      const k = (size * 0.56) / 24;
+      s += `<path d="${ICONS[icon]}" transform="translate(${f1(x - 12 * k)} ${f1(y - 12 * k)}) scale(${k.toFixed(4)})" fill="none" stroke="${o.text}" stroke-width="${(2.2).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    } else if (icon != null) {
+      s += `<text x="${f1(x)}" y="${f1(y + size * 0.16)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(size * 0.44)}" fill="${o.text}">${esc(String(icon).slice(0, 3))}</text>`;
+    }
+    return s;
+  }
+  /** A white UI card with a soft shadow; `lift` (0..1) raises it and deepens the shadow. */
+  function uiCard(x, y, w, h, { lift = 0, radius = 36 * U, fill = "#fff", stroke = null } = {}) {
+    const dy = -lift * 10 * U;
+    return `<rect x="${f1(x - w / 2)}" y="${f1(y - h / 2 + (12 + lift * 14) * U)}" width="${f1(w)}" height="${f1(h)}" rx="${f1(radius)}" fill="${INK}" opacity="${(0.1 + lift * 0.06).toFixed(3)}"/>`
+      + `<rect x="${f1(x - w / 2)}" y="${f1(y - h / 2 + dy)}" width="${f1(w)}" height="${f1(h)}" rx="${f1(radius)}" fill="${fill}"${stroke ? ` stroke="${stroke}" stroke-width="${f1(5 * U)}"` : ""}/>`;
+  }
+  const MUTED = readable(mix(INK, "#ffffff", 0.3), "#ffffff");
+  /** Enter animation shared by the UI cards: up from below, a slight tilt that settles. */
+  function enter(t, t0, k = 0) {
+    const p = prog(t, t0, t0 + 0.36);
+    return { p, e: outBack(p, 1.6), dy: (1 - outCubic(p)) * 110 * U, rot: (1 - outCubic(p)) * (k % 2 ? 5 : -5), op: clamp(p * 3) };
+  }
+  /** The item whose moment came last: the one the voice is talking about. */
+  function activeIndex(times, t) { let a = -1; times.forEach((t0, k) => { if (t >= t0) a = k; }); return a; }
+
+  /* ---- cards: feature cards, one by one; the one being talked about lifts. */
+  SCENES.cards = {
+    render(sc, t) {
+      const items = sc.items ?? [], n = items.length;
+      const hasTitle = (sc.lines ?? []).length > 0;
+      titleLines(sc, t, { center: PORTRAIT ? H * 0.16 : H * 0.15 });
+      const out = inBack(prog(t, sc.end - 0.24, sc.end));
+      const times = items.map((it, k) => when(sc, it.at, 0.35 + k * 0.55));
+      const act = activeIndex(times, t);
+      const cols = PORTRAIT ? 1 : Math.min(n, sc.columns ?? (n <= 4 ? n : 3));
+      const rows = Math.ceil(n / cols);
+      const top = hasTitle ? (PORTRAIT ? H * 0.27 : H * 0.3) : H * 0.14, bottom = PORTRAIT ? H * 0.83 : H * 0.9;
+      const gapX = 36 * U, gapY = 30 * U;
+      const cw = PORTRAIT ? Math.min(W * 0.86, 940 * U) : (W * 0.88 - (cols - 1) * gapX) / cols;
+      // Cards are as tall as their tallest content needs, and all the same height.
+      const need = items.map((it) => {
+        if (PORTRAIT || cols === 1) {
+          const room = cw - 34 * U - Math.min(112 * U, 250 * U * 0.46) - 30 * U - 34 * U;
+          const ti = wrap(it.title, 800, 54 * U, MIN_TEXT * U, room, 1), tb = it.text ? wrap(it.text, 500, 40 * U, MIN_TEXT * U, room, 2) : null;
+          return Math.max(170 * U, 70 * U + ti.size + (tb ? 14 * U + tb.lines.length * tb.size * 1.2 : 0));
+        }
+        const room = cw - 80 * U, is = 110 * U;
+        const ti = wrap(it.title, 800, 56 * U, MIN_TEXT * U, room, 2), tb = it.text ? wrap(it.text, 500, 40 * U, MIN_TEXT * U, room, 3) : null;
+        return 40 * U + is + 34 * U + ti.lines.length * ti.size * 1.15 + (tb ? 6 * U + tb.lines.length * tb.size * 1.2 + 10 * U : 0) + 40 * U;
+      });
+      const avail = (bottom - top - (rows - 1) * gapY) / rows;
+      const ch = Math.max(...need, 0) > avail ? avail : Math.max(Math.min(PORTRAIT ? 250 * U : 420 * U, avail), ...need);
+      if (Math.max(...need, 0) > avail + 1) problem(`scene ${sc.key}: the cards' text does not fit; shorten titles and texts or use fewer cards.`);
+      const blockH = rows * ch + (rows - 1) * gapY, y0 = (top + bottom) / 2 - blockH / 2;
+      items.forEach((it, k) => {
+        const en = enter(t, early(sc, times[k]), k);
+        if (en.p <= 0) return;
+        const r = Math.floor(k / cols), c = k % cols, inRow = Math.min(cols, n - r * cols);
+        const x = CX + (c - (inRow - 1) / 2) * (cw + gapX), y = y0 + r * (ch + gapY) + ch / 2;
+        safe(sc, y - ch / 2, y + ch / 2, `card "${it.title}"`);
+        const lift = k === act ? outCubic(prog(t, times[k], times[k] + 0.3)) : 0;
+        const color = it.color ?? sc.color ?? style.accent;
+        let g = `<g opacity="${(en.op * (1 - out)).toFixed(3)}" transform="translate(0 ${f1(en.dy + out * H * 0.5)}) rotate(${en.rot.toFixed(2)} ${f1(x)} ${f1(y)})">`;
+        g += uiCard(x, y, cw, ch, { lift, stroke: lift > 0.5 ? readable(col(color), "#ffffff") : null });
+        const lift_dy = -lift * 10 * U;
+        if (PORTRAIT || cols === 1) {
+          const is = Math.min(ch * 0.46, 112 * U);
+          g += iconTile(it.icon ?? String(k + 1), x - cw / 2 + 34 * U + is / 2, y + lift_dy, is, color, `scene ${sc.key}: card ${k + 1} icon`);
+          const tx = x - cw / 2 + 34 * U + is + 30 * U, room = cw - (tx - (x - cw / 2)) - 34 * U;
+          const ti = wrap(it.title, 800, 54 * U, MIN_TEXT * U, room, 1, `scene ${sc.key}: card ${k + 1} title`);
+          const tb = it.text ? wrap(it.text, 500, 40 * U, MIN_TEXT * U, room, 2, `scene ${sc.key}: card ${k + 1} text`) : null;
+          const hTot = ti.size + (tb ? 14 * U + tb.lines.length * tb.size * 1.2 : 0);
+          const ty = y + lift_dy - hTot / 2 + ti.size * 0.8;
+          g += textBlock(ti.lines, tx, ty, ti.size, 800, INK, { anchor: "start" });
+          if (tb) g += textBlock(tb.lines, tx, ty + ti.size * 0.35 + 14 * U + tb.size, tb.size, 500, MUTED, { anchor: "start", lh: 1.2 });
+        } else {
+          const is = 110 * U;
+          g += iconTile(it.icon ?? String(k + 1), x - cw / 2 + 40 * U + is / 2, y - ch / 2 + 40 * U + is / 2 + lift_dy, is, color, `scene ${sc.key}: card ${k + 1} icon`);
+          const room = cw - 80 * U;
+          const ti = wrap(it.title, 800, 56 * U, MIN_TEXT * U, room, 2, `scene ${sc.key}: card ${k + 1} title`);
+          let ty = y - ch / 2 + 40 * U + is + 34 * U + ti.size * 0.8 + lift_dy;
+          g += textBlock(ti.lines, x - cw / 2 + 40 * U, ty, ti.size, 800, INK, { anchor: "start", lh: 1.15 });
+          if (it.text) {
+            ty += ti.lines.length * ti.size * 1.15 + 6 * U;
+            const tb = wrap(it.text, 500, 40 * U, MIN_TEXT * U, room, 3, `scene ${sc.key}: card ${k + 1} text`);
+            g += textBlock(tb.lines, x - cw / 2 + 40 * U, ty + tb.size * 0.4, tb.size, 500, MUTED, { anchor: "start", lh: 1.2 });
+          }
+        }
+        front += g + "</g>";
+        if (lift > 0 && lift < 1) front += burst(t, times[k] + 0.05, x + cw / 2 - 30 * U, y - ch / 2, 700 + k * 17, [col(color), INK], 7, 90, 10 * U);
+      });
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      (sc.items ?? []).forEach((it, k) => { const t0 = when(sc, it.at, 0.35 + k * 0.55); add(t0 - 0.05, "swoosh", { gain: 0.5 }); add(t0 + 0.2, "pop", { pitch: 0.9 + k * 0.12, gain: 0.6 }); });
+      add(sc.end - 0.35, "whoosh", { dur: 0.45, gain: 0.45 });
+    },
+  };
+
+  /* ---- stats: metric cards; numbers count up, bars fill, a change chip pops. */
+  const formatNumber = (v, it) => {
+    const d = it.decimals ?? (Number.isInteger(it.value) ? 0 : 1);
+    const locale = S.language === "fr" ? "fr-FR" : S.language ?? "en-US";
+    return `${it.prefix ?? ""}${v.toLocaleString(locale, { minimumFractionDigits: d, maximumFractionDigits: d })}${it.suffix ?? ""}`;
+  };
+  SCENES.stats = {
+    render(sc, t) {
+      const items = sc.items ?? [], n = items.length;
+      titleLines(sc, t, { center: PORTRAIT ? H * 0.16 : H * 0.15 });
+      const out = inBack(prog(t, sc.end - 0.24, sc.end));
+      const cols = sc.columns ?? (PORTRAIT ? (n === 1 ? 1 : 2) : Math.min(n, 4));
+      const rows = Math.ceil(n / cols);
+      const top = (sc.lines ?? []).length ? (PORTRAIT ? H * 0.28 : H * 0.3) : H * 0.15, bottom = PORTRAIT ? H * 0.8 : H * 0.88;
+      const gap = 34 * U;
+      const cw = (Math.min(W * 0.88, PORTRAIT ? 980 * U : W) - (cols - 1) * gap) / cols;
+      const ch = Math.min(PORTRAIT ? 420 * U : 460 * U, (bottom - top - (rows - 1) * gap) / rows);
+      const y0 = (top + bottom) / 2 - (rows * ch + (rows - 1) * gap) / 2;
+      items.forEach((it, k) => {
+        const t0 = early(sc, when(sc, it.at, 0.35 + k * 0.45));
+        const en = enter(t, t0, k);
+        if (en.p <= 0) return;
+        const r = Math.floor(k / cols), c = k % cols, inRow = Math.min(cols, n - r * cols);
+        const x = CX + (c - (inRow - 1) / 2) * (cw + gap), y = y0 + r * (ch + gap) + ch / 2;
+        safe(sc, y - ch / 2, y + ch / 2, `stat "${it.label}"`);
+        const color = col(it.color ?? sc.color ?? style.accent);
+        const count = outCubic(prog(t, t0 + 0.1, t0 + 1.0));
+        const valueText = formatNumber((it.from ?? 0) + (it.value - (it.from ?? 0)) * count, it);
+        let g = `<g opacity="${(en.op * (1 - out)).toFixed(3)}" transform="translate(0 ${f1(en.dy + out * H * 0.5)}) rotate(${en.rot.toFixed(2)} ${f1(x)} ${f1(y)})">`;
+        g += uiCard(x, y, cw, ch);
+        const pad = 40 * U, left = x - cw / 2 + pad;
+        if (it.icon) g += iconTile(it.icon, left + 40 * U, y - ch / 2 + pad + 40 * U, 80 * U, color, `scene ${sc.key}: stat ${k + 1} icon`);
+        const finalText = formatNumber(it.value, it);
+        const vs = Math.min(150 * U, ((cw - pad * 2) * 150 * U) / measure(finalText, 800, 150 * U));
+        const vy = y - ch / 2 + pad + (it.icon ? 110 * U : 0) + vs * 0.85;
+        g += `<text x="${f1(left)}" y="${f1(vy)}" font-family='${FONT}' font-weight="800" font-size="${f1(vs)}" fill="${readable(color, "#ffffff", `scene ${sc.key}: stat ${k + 1} number`)}">${esc(valueText)}</text>`;
+        const lb = wrap(it.label, 600, 42 * U, MIN_TEXT * U, cw - pad * 2, 2, `scene ${sc.key}: stat ${k + 1} label`);
+        g += textBlock(lb.lines, left, vy + 26 * U + lb.size, lb.size, 600, MUTED, { anchor: "start", lh: 1.2 });
+        if (it.bar != null) {
+          const frac = clamp(it.bar === true ? it.value / 100 : it.bar) * count;
+          const by = y + ch / 2 - pad - 18 * U, bw = cw - pad * 2;
+          g += `<rect x="${f1(left)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(18 * U)}" rx="${f1(9 * U)}" fill="${INK}" opacity=".1"/>`;
+          g += `<rect x="${f1(left)}" y="${f1(by)}" width="${f1(Math.max(18 * U, bw * frac))}" height="${f1(18 * U)}" rx="${f1(9 * U)}" fill="${color}"/>`;
+        }
+        if (it.delta) {
+          const dp = outBack(prog(t, t0 + 0.9, t0 + 1.2), 2.2);
+          if (dp > 0) g += pill(it.delta, x + cw / 2 - pad - measure(it.delta, 800, 36 * U) / 2 - 26 * U, y - ch / 2 + pad + 26 * U, { size: 36 * U, fill: col(it.deltaColor ?? "green"), scale: dp, what: `scene ${sc.key}: stat ${k + 1} delta` });
+        }
+        front += g + "</g>";
+      });
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      (sc.items ?? []).forEach((it, k) => {
+        const t0 = when(sc, it.at, 0.35 + k * 0.45);
+        add(t0 - 0.05, "swoosh", { gain: 0.45 });
+        [0.25, 0.45, 0.65, 0.85].forEach((d, j) => add(t0 + d, "tick", { pitch: 1 + j * 0.15 + k * 0.05, gain: 0.35 }));
+        add(t0 + 1.0, it.delta ? "coin" : "blip", { pitch: 1 + k * 0.08, gain: 0.45 });
+      });
+    },
+  };
+
+  /* ---- checklist: a to-do card; items get ticked off as they are said. */
+  SCENES.checklist = {
+    render(sc, t) {
+      const items = sc.items ?? [], n = items.length;
+      titleLines(sc, t, { center: PORTRAIT ? H * 0.15 : H * 0.14 });
+      const out = inBack(prog(t, sc.end - 0.24, sc.end));
+      const color = col(sc.color ?? style.accent);
+      const cw = Math.min(W * 0.88, (PORTRAIT ? 960 : 1200) * U);
+      const rowH = PORTRAIT ? 150 * U : 110 * U, head = 150 * U, foot = 100 * U;
+      const ch = head + n * rowH + foot;
+      const top = Math.max((sc.lines ?? []).length ? H * 0.26 : H * 0.12, (PORTRAIT ? H * 0.55 : H * 0.56) - ch / 2);
+      safe(sc, top, top + ch, "the checklist");
+      const en = enter(t, early(sc, sc.start));
+      if (en.p <= 0) return;
+      const x = CX, y = top + ch / 2;
+      const times = items.map((it, k) => when(sc, it.at, 0.8 + k * 0.6));
+      const done = times.filter((t0) => t >= t0 + 0.15).length;
+      let g = `<g opacity="${(en.op * (1 - out)).toFixed(3)}" transform="translate(0 ${f1(en.dy + out * H * 0.5)})">`;
+      g += uiCard(x, y, cw, ch);
+      const left = x - cw / 2 + 44 * U;
+      const title = sc.title ?? "";
+      const hs = wrap(title, 800, 64 * U, MIN_TEXT * U, cw - 300 * U, 1, `scene ${sc.key}: checklist title`);
+      g += textBlock(hs.lines, left, top + 96 * U, hs.size, 800, INK, { anchor: "start" });
+      g += pill(`${done}/${n}`, x + cw / 2 - 44 * U - 64 * U, top + 76 * U, { size: 42 * U, fill: done === n ? col("green") : INK });
+      g += `<rect x="${f1(left)}" y="${f1(top + head - 14 * U)}" width="${f1(cw - 88 * U)}" height="${f1(2 * U)}" fill="${INK}" opacity=".1"/>`;
+      items.forEach((it, k) => {
+        const ry = top + head + k * rowH + rowH / 2;
+        const appear = prog(t, early(sc, sc.start + 0.2 + k * 0.08), early(sc, sc.start + 0.2 + k * 0.08) + 0.3);
+        const tick = prog(t, times[k], times[k] + 0.3);
+        const bs = 66 * U, bx = left + bs / 2;
+        const ob = onFill(color, `scene ${sc.key}: checkbox`);
+        g += `<g opacity="${clamp(appear * 2).toFixed(3)}" transform="translate(${f1((1 - outCubic(appear)) * 40 * U)} 0)">`;
+        const pop = tick > 0 ? 1 + wobble(t - times[k], 0.25, 30, 9) : 1;
+        g += `<g transform="translate(${f1(bx)} ${f1(ry)}) scale(${pop.toFixed(3)})">`;
+        g += `<rect x="${f1(-bs / 2)}" y="${f1(-bs / 2)}" width="${f1(bs)}" height="${f1(bs)}" rx="${f1(16 * U)}" fill="${tick > 0 ? ob.fill : "#fff"}" stroke="${tick > 0 ? ob.fill : mix(INK, "#fff", 0.55)}" stroke-width="${f1(5 * U)}"/>`;
+        if (tick > 0) {
+          const k2 = (bs * 0.62) / 24;
+          g += `<path d="${ICONS.check}" transform="translate(${f1(-12 * k2)} ${f1(-12 * k2)}) scale(${k2.toFixed(4)})" fill="none" stroke="${ob.text}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="24" stroke-dashoffset="${f1(24 * (1 - outCubic(tick)))}"/>`;
+        }
+        g += `</g>`;
+        const tx = left + bs + 30 * U;
+        const tw = wrap(it.text, 600, 56 * U, MIN_TEXT * U, cw - (tx - (x - cw / 2)) - 44 * U, 1, `scene ${sc.key}: item ${k + 1}`);
+        g += textBlock(tw.lines, tx, ry + tw.size * 0.35, tw.size, 600, tick > 0.5 ? MUTED : INK, { anchor: "start" });
+        if (tick > 0) g += `<rect x="${f1(tx)}" y="${f1(ry - 2 * U)}" width="${f1(measure(tw.lines[0], 600, tw.size) * outCubic(prog(t, times[k] + 0.1, times[k] + 0.4)))}" height="${f1(4 * U)}" rx="${f1(2 * U)}" fill="${MUTED}"/>`;
+        g += `</g>`;
+      });
+      const by = top + ch - foot / 2, bw = cw - 88 * U;
+      const frac = n ? done / n : 0;
+      g += `<rect x="${f1(left)}" y="${f1(by - 9 * U)}" width="${f1(bw)}" height="${f1(18 * U)}" rx="${f1(9 * U)}" fill="${INK}" opacity=".1"/>`;
+      g += `<rect x="${f1(left)}" y="${f1(by - 9 * U)}" width="${f1(Math.max(18 * U, bw * frac))}" height="${f1(18 * U)}" rx="${f1(9 * U)}" fill="${color}"/>`;
+      front += g + "</g>";
+      if (done === n && n) front += burst(t, times[n - 1] + 0.2, x + cw / 2 - 104 * U, top + 66 * U, 820, CONFETTI, 16, 260, 30 * U);
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      add(sc.start + 0.1, "swoosh", { gain: 0.45 });
+      const items = sc.items ?? [];
+      items.forEach((it, k) => { const t0 = when(sc, it.at, 0.8 + k * 0.6); add(t0, "click", { gain: 0.6 }); add(t0 + 0.05, "blip", { pitch: 1 + k * 0.12, gain: 0.45 }); });
+      if (items.length) add(when(sc, items[items.length - 1].at, 0.8 + (items.length - 1) * 0.6) + 0.25, "chime", { gain: 0.6 });
+    },
+  };
+
+  /* ---- compare: a "before" card, then an "after" card that wins. */
+  SCENES.compare = {
+    render(sc, t) {
+      titleLines(sc, t, { center: PORTRAIT ? H * 0.14 : H * 0.14 });
+      const out = inBack(prog(t, sc.end - 0.24, sc.end));
+      const sides = [sc.before ?? {}, sc.after ?? {}];
+      const good = col(sc.color ?? style.accent), bad = col(sc.badColor ?? "slate");
+      const cw = PORTRAIT ? Math.min(W * 0.88, 960 * U) : W * 0.42;
+      const rowH = (PORTRAIT ? 104 : 90) * U, head = 130 * U;
+      const hs = sides.map((sd) => head + (sd.items ?? []).length * rowH + 40 * U);
+      const top = (sc.lines ?? []).length ? (PORTRAIT ? H * 0.23 : H * 0.28) : H * 0.12;
+      const bottom = PORTRAIT ? H * 0.84 : H * 0.9;
+      sides.forEach((sd, k) => {
+        const t0 = early(sc, when(sc, sd.at, 0.3 + k * 1.2));
+        const en = enter(t, t0, k);
+        if (en.p <= 0) return;
+        const ch = hs[k];
+        let x, y;
+        if (PORTRAIT) { const tot = hs[0] + hs[1] + 40 * U; const y0 = (top + bottom) / 2 - tot / 2; x = CX; y = k === 0 ? y0 + hs[0] / 2 : y0 + hs[0] + 40 * U + hs[1] / 2; }
+        else { x = CX + (k === 0 ? -1 : 1) * (cw / 2 + 24 * U); y = (top + bottom) / 2; }
+        safe(sc, y - ch / 2, y + ch / 2, k === 0 ? "the before card" : "the after card");
+        const winner = k === 1;
+        const settle = winner ? 0 : outCubic(prog(t, when(sc, sides[1].at, 1.5), when(sc, sides[1].at, 1.5) + 0.4));
+        const c = winner ? good : bad;
+        let g = `<g opacity="${(en.op * (1 - out)).toFixed(3)}" transform="translate(0 ${f1(en.dy + out * H * 0.5)}) rotate(${(en.rot - settle * 2).toFixed(2)} ${f1(x)} ${f1(y)}) translate(${f1(x)} ${f1(y)}) scale(${(1 - settle * 0.04).toFixed(3)}) translate(${f1(-x)} ${f1(-y)})">`;
+        g += uiCard(x, y, cw, ch, { stroke: winner ? readable(good, "#ffffff") : null, fill: winner ? "#fff" : mix("#ffffff", PAPER, 0.5) });
+        const left = x - cw / 2 + 40 * U, tp = y - ch / 2;
+        const label = sd.title ?? (winner ? "After" : "Before");
+        g += pill(label, left + measure(label, 800, 44 * U) / 2 + 32 * U, tp + 70 * U, { size: 44 * U, fill: c, what: `scene ${sc.key}: ${winner ? "after" : "before"} title` });
+        (sd.items ?? []).forEach((txt, j) => {
+          const it0 = t0 + 0.25 + j * 0.12;
+          const ip = prog(t, it0, it0 + 0.25);
+          if (ip <= 0) return;
+          const ry = tp + head + j * rowH + rowH / 2;
+          g += `<g opacity="${clamp(ip * 2).toFixed(3)}">` + iconTile(winner ? "check" : "x", left + 30 * U, ry, 60 * U, c);
+          const tw = wrap(txt, 600, 52 * U, MIN_TEXT * U, cw - 160 * U, 1, `scene ${sc.key}: ${winner ? "after" : "before"} item ${j + 1}`);
+          g += textBlock(tw.lines, left + 84 * U, ry + tw.size * 0.35, tw.size, 600, winner ? INK : MUTED, { anchor: "start" }) + `</g>`;
+        });
+        front += g + "</g>";
+        if (winner) front += burst(t, t0 + 0.3, x + cw / 2 - 40 * U, y - ch / 2, 910, CONFETTI, 16, 220, 20 * U);
+      });
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      add(when(sc, sc.before?.at, 0.3) - 0.05, "swoosh", { gain: 0.45 });
+      add(when(sc, sc.before?.at, 0.3) + 0.4, "error", { gain: 0.35 });
+      add(when(sc, sc.after?.at, 1.5) - 0.05, "whoosh", { dur: 0.35, gain: 0.5 });
+      add(when(sc, sc.after?.at, 1.5) + 0.3, "chime", { gain: 0.55 });
+    },
+  };
+
+  /* ---- prompt: a tip card: number, title, and the prompt to copy, typed out. */
+  SCENES.prompt = {
+    render(sc, t) {
+      const u = t - sc.start;
+      const out = inBack(prog(t, sc.end - 0.24, sc.end));
+      const c = col(sc.color ?? style.accent);
+      const pw = Math.min(W * 0.88, (PORTRAIT ? 960 : 1400) * U);
+      const en = enter(t, early(sc, sc.start));
+      if (en.p <= 0) return;
+      // Measure the block (number, title, panel, caption), then centre it in the frame.
+      const psize = (PORTRAIT ? 56 : 50) * U;
+      const tiM = sc.title ? wrap(sc.title, 800, 110 * U, 64 * U, pw, 2) : null;
+      const pwr = wrap(sc.prompt, 600, psize, MIN_TEXT * U, pw - 72 * U, 8);
+      const capM = sc.caption ? wrap(sc.caption, 600, 50 * U, MIN_TEXT * U, pw, 2) : null;
+      const blockH = (sc.number !== false ? 80 * U : 0) + (tiM ? tiM.lines.length * tiM.size * 1.05 + 40 * U : 0)
+        + 72 * U + 56 * U + pwr.lines.length * pwr.size * 1.3 + (capM ? 50 * U + capM.lines.length * capM.size * 1.25 : 0);
+      let y = Math.max(PORTRAIT ? H * 0.1 : H * 0.08, H * 0.5 - blockH / 2);
+      let g = `<g opacity="${(en.op * (1 - out)).toFixed(3)}" transform="translate(0 ${f1(en.dy + out * H * 0.5)})">`;
+      if (sc.number !== false) {
+        const num = typeof sc.number === "string" ? sc.number : `${labels.number} ${String(scenes.filter((x) => x.type === "prompt").indexOf(sc) + 1).padStart(2, "0")}`;
+        g += pill(num, CX - pw / 2 + measure(num, 800, 40 * U) / 2 + 30 * U, y, { size: 40 * U, fill: INK, rot: -4 });
+        y += 80 * U;
+      }
+      if (sc.title) {
+        const ti = wrap(sc.title, 800, 110 * U, 64 * U, pw, 2, `scene ${sc.key}: title`);
+        g += textBlock(ti.lines, CX - pw / 2, y + ti.size * 0.85, ti.size, 800, INK, { anchor: "start", lh: 1.05 });
+        y += ti.lines.length * ti.size * 1.05 + 40 * U;
+      }
+      front += g + "</g>";
+      const bottomLimit = PORTRAIT ? (sc.caption ? H * 0.76 : H * 0.84) : H * 0.84;
+      const gy = drawPromptPanel(sc, t, u, c, { x: CX, pw, top: y, bottomLimit, size: psize }, out);
+      if (sc.caption) {
+        const cp = prog(u, promptStart(sc) + promptTypeTime(sc), promptStart(sc) + promptTypeTime(sc) + 0.35) * (1 - out);
+        const cap = wrap(sc.caption, 600, 50 * U, MIN_TEXT * U, pw, 2, `scene ${sc.key}: caption`);
+        safe(sc, gy + 40 * U, gy + 60 * U + cap.lines.length * cap.size * 1.25, "the caption");
+        front += `<g transform="translate(0 ${f1((1 - outCubic(cp)) * 30 * U)})">${textBlock(cap.lines, CX - pw / 2, gy + 50 * U + cap.size, cap.size, 600, readable(mix(INK, BG, 0.2), BG), { anchor: "start", op: clamp(cp * 2), lh: 1.25 })}</g>`;
+      }
+    },
+    cues(sc, add) {
+      add(sc.start + 0.05, "swoosh", { gain: 0.45 });
+      add(sc.start + promptStart(sc), "typing", { dur: promptTypeTime(sc), gain: 0.5 });
+      add(sc.start + promptStart(sc) + promptTypeTime(sc), "pop", { pitch: 1.2, gain: 0.45 });
     },
   };
 
@@ -941,7 +1286,7 @@
     }
     return c.sort((a, b) => a.t - b.t);
   }
-  const DEFAULT_MOOD = { pileup: "tension", title: "calm", fan: "calm", card: "groove", chat: "calm", list: "groove", grid: "run", logo: "outro" };
+  const DEFAULT_MOOD = { pileup: "tension", title: "calm", fan: "calm", card: "groove", chat: "calm", cards: "groove", stats: "groove", checklist: "groove", compare: "groove", prompt: "groove", list: "groove", grid: "run", logo: "outro" };
   function buildMeta() {
     return {
       duration: DURATION, beat: BEAT, bpm: 60 / BEAT, width: W, height: H,

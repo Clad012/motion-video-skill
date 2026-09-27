@@ -15,7 +15,7 @@ engine/make.mjs      every command below
 docs/story-schema.md every story.json field: read it before writing one
 docs/sounds.md       the 8 music styles and 43 sound effects
 docs/voices.md       real ElevenLabs voice ids (English and French) and models
-examples/            smoothie-squad (all scene types, 7 voices), minimal (text only, 16:9)
+examples/            app-launch (EN, 9:16), astuces-ia (FR, 9:16), feature-launch (16:9, no voice): all UI cards
 ```
 
 ## Get the engine
@@ -65,7 +65,8 @@ One idea per scene, one short spoken line per scene:
 |---|---|---|
 | Hook: the problem | `pileup`, `chat` or `title` | Make the pain visible in 3 to 6 s. |
 | Turn | `title` or `fan` | Relief, the reveal. |
-| Proof, one by one | `card` × 3 to 7 | Each thing, feature or person speaks for itself. |
+| Proof, one by one | `cards`, `prompt`, or `card` × 3 to 7 | Each feature, tip or person, one at a time. |
+| Results | `stats`, `compare`, `checklist` | Numbers, before/after, what gets done. |
 | How it works | `list` | 3 to 5 steps or tips. |
 | All together | `grid` | The whole range. |
 | Ending | `logo` | Name, tagline, URL. |
@@ -82,11 +83,12 @@ Drop what you don't need: an announcement can be `title` → `list` → `logo`.
   real spelling on screen); `at` references use the spoken spelling.
 
 ### 3. Media
+Most videos need none: `cards`, `stats`, `checklist`, `compare`, `prompt`,
+`chat`, `list`, `pileup`, `title` and `logo` are drawn UI. Prefer them.
 `card`, `fan` and `grid` need media: a video, an image or a folder of frames.
 Portrait art (about 9:16) for cards, a square close-up (`"avatar"`) for grids;
 loops of 2 to 4 s are ideal. Use the user's screens, product shots and photos,
-or media they have the rights to. Without any, generate it (see
-`examples/smoothie-squad/make-media.mjs`, which draws characters as SVG).
+or media they have the rights to. Without any, use the UI-card scenes.
 Media must show what the scene says. A decorative character, or another
 product's mascot, next to an unrelated tip is worse than no media: use a
 `chat`, `list` or `title` scene instead.

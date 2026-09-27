@@ -67,7 +67,7 @@ show in its first 0.8 s, because frame 0 is the thumbnail.
 
 | Field | Meaning |
 |---|---|
-| `type` | `pileup`, `title`, `fan`, `card`, `list`, `grid`, `logo`. |
+| `type` | `pileup`, `title`, `chat`, `cards`, `stats`, `checklist`, `compare`, `prompt`, `fan`, `card`, `list`, `grid`, `logo`. |
 | `id` | Optional name; also the voice file name. Default `s1`, `s2`… |
 | `voice` | `{ "who": "narrator", "text": "What is said.", "at": 0.35 }`. `at` is when speech starts, in seconds from the scene start. |
 | `duration` | Minimum length in seconds. With a voice, the scene is at least as long as the line plus `pad` (0.55 s). Always rounded up to whole beats. |
@@ -151,6 +151,71 @@ A big media card flies in from alternating sides and lands with a squish.
 | `progress` | `false` hides the dots shown across a run of consecutive cards. |
 
 The card squashes slightly on every spoken word.
+
+### UI cards (no media needed)
+
+These scenes are drawn UI: white cards, icon tiles, numbers, checkboxes. They
+need no images or videos. Title lines (same as `title`, in `lines`) sit above
+them. Icons are drawn line icons named `check x clock bolt star bell chart
+calendar chat lock heart target mail list users search up rocket`; any other
+short text (1 to 3 characters) is shown as a letter or number in the tile.
+
+#### `cards`: feature cards
+Cards slide in one by one at their `at`; the one being talked about lifts,
+with an outline in its colour. They stack in one column on vertical formats,
+and sit in a grid of up to 3 or 4 (`columns`) on 16:9.
+
+```json
+{ "type": "cards", "lines": [ { "text": "Why it works", "at": 0.1 } ],
+  "items": [ { "icon": "bolt", "title": "Plans your morning", "text": "From your calendar and inbox.", "at": "plans", "color": "coral" } ] }
+```
+Title: one line on vertical formats, two on 16:9. Text: two or three lines. 2 to 4 cards.
+
+#### `stats`: metric cards
+Each number counts up from `from` (default 0) to `value` when its card lands;
+an optional bar fills, and an optional change chip (`delta`) pops.
+
+```json
+{ "type": "stats", "items": [
+  { "icon": "clock", "value": 6, "prefix": "+", "suffix": " h", "label": "focus time", "at": "six", "bar": 0.7, "delta": "+38%", "color": "coral" },
+  { "icon": "calendar", "value": 0, "from": 5, "label": "missed deadlines", "at": "zero" } ] }
+```
+`decimals` (default: as written), `bar` (0 to 1, or `true` for value/100),
+`deltaColor` (default green), `columns`. Numbers use the story's `language`
+for separators (`2,4` in French). 2 to 4 stats.
+
+#### `checklist`: a to-do card
+A card with a title, a live `done/total` counter and items; each item ticks
+at its `at` (checkbox fills, check draws, the text is struck through), the
+progress bar grows, confetti when all are done.
+
+```json
+{ "type": "checklist", "title": "Today", "color": "coral",
+  "items": [ { "text": "Answer the 3 emails that matter", "at": "emails" }, { "text": "30-minute walk", "at": "walk" } ] }
+```
+One short line per item; 3 to 5 items.
+
+#### `compare`: before and after
+A `before` card (muted, with ✗ marks), then an `after` card (in the accent,
+with ✓ marks) that wins: the before card settles back, confetti on the after.
+Stacked on vertical formats, side by side on 16:9.
+
+```json
+{ "type": "compare", "color": "mint", "badColor": "slate",
+  "before": { "title": "Without context", "items": ["Vague answer", "Three back-and-forths"], "at": "without" },
+  "after": { "title": "With context", "items": ["Precise answer", "Right first time"], "at": "With" } }
+```
+
+#### `prompt`: a tip card
+A number pill (`labels.number` + position among the prompt scenes, or
+`number` as text, or `false`), a big title, and the prompt panel that types
+out within 1.2 s of the voice, then an optional `caption` under it. The block
+is centred in the frame.
+
+```json
+{ "type": "prompt", "color": "idee", "title": "Le vide-cerveau",
+  "prompt": "Voici tout ce que j'ai en tête : […]. Trie en 4 listes.", "caption": "Tu vides ta tête, l'IA range." }
+```
 
 ### `chat`: a chat window
 A chat window whose messages appear one by one: the user's in the accent colour

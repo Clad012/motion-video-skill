@@ -239,7 +239,11 @@ def check_mix(project, story, audio):
     a whole-mix transcription silently drops segments, a window per line does not."""
     build = os.path.join(project, "build")
     cues = json.load(open(os.path.join(build, "cues.json")))
-    index = json.load(open(os.path.join(project, "voices", "voices.json"), encoding="utf8"))
+    index_path = os.path.join(project, "voices", "voices.json")
+    if not any(c["kind"] == "voice" for c in cues) or not os.path.exists(index_path):
+        print("no voice lines in this video: nothing to check")
+        return
+    index = json.load(open(index_path, encoding="utf8"))
     levels_path = os.path.join(build, "voice-levels.json")
     levels = {r["key"]: r["voiceOverBackgroundDb"] for r in json.load(open(levels_path))} if os.path.exists(levels_path) else {}
     bad = 0

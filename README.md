@@ -10,7 +10,7 @@ MP4. Vertical for TikTok, Reels and Shorts, or 16:9 and square.
 
 ![Contact sheet of the example video](docs/preview.jpg)
 
-▶ [Watch the example (docs/preview.mp4)](docs/preview.mp4)
+▶ [Watch the app-launch example (docs/preview.mp4)](docs/preview.mp4)
 
 - **Deterministic.** `render(t)` is a pure function of time: the still you
   check is the frame that ships, and every render is identical.
@@ -44,24 +44,29 @@ npm install
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 node engine/make.mjs doctor          # checks everything, prints the fix for anything missing
 
-node engine/make.mjs examples/smoothie-squad all
-# → examples/smoothie-squad/out/smoothie-squad.mp4
+node engine/make.mjs examples/app-launch all
+# → examples/app-launch/out/daybreak-app-launch.mp4
 ```
 
 No browser at all? Set `CHROME_PATH` to one, or `npx playwright install chromium`.
 For voices you bring yourself, `pip install faster-whisper` gives precise word
 timings and lets `check` verify the mix.
 
-The example ships with its voices. The text-only 16:9 example needs nothing:
+Three examples, all built from UI cards (no media to prepare):
 
-```bash
-node engine/make.mjs examples/minimal all
-```
+| Example | Format | Shows |
+|---|---|---|
+| [`app-launch`](examples/app-launch/story.json) | 9:16, English voice | Notification pile-up, title reveal, checklist ticked off, feature cards, stats counting up, logo |
+| [`astuces-ia`](examples/astuces-ia/story.json) | 9:16, French voice | Chat hook with a stamp, three prompt cards, before/after comparison, call to action |
+| [`feature-launch`](examples/feature-launch/story.json) | 16:9, no voice | Title, before/after, feature card grid, stats, logo |
+
+The voiced examples ship with their voice files, so they render as they are.
 
 ## Make your own
 
-1. Copy an example folder: `cp -r examples/minimal my-video`.
-2. Put your videos and images in `my-video/media/` and list them under `media`.
+1. Copy the closest example: `cp -r examples/feature-launch my-video`.
+2. Optional: put videos and images in `my-video/media/` and list them under `media`
+   (for `card`, `fan` and `grid` scenes; the UI-card scenes need none).
 3. Write the scenes in `my-video/story.json` ([reference](docs/story-schema.md)).
 4. Add voices (optional): give scenes a `voice` with its line, make each line
    with your text-to-speech tool, save it as `my-video/voices/<scene id>.mp3`,
@@ -97,6 +102,11 @@ delivery.
 | `pileup` | Notifications or tasks rain down and shake, words slam in on the voice, then it all blows away | The problem, the hook |
 | `title` | Big lines popping in letter by letter, a slow "breathe" word, confetti | Turns, statements, reveals |
 | `fan` | Media cards fan in like a hand of cards; the first grows into the next card | Introducing a cast or a range |
+| `cards` | UI feature cards slide in one by one; the one being talked about lifts | Features, benefits, reasons |
+| `stats` | Metric cards: numbers count up, bars fill, a change chip pops | Results, numbers, proof |
+| `checklist` | A to-do card whose items tick off as they are said, with a live progress count | Routines, steps done for you |
+| `compare` | A "before" card, then an "after" card that wins | Before/after, with/without |
+| `prompt` | A tip card: number, title, and a prompt that types out | Tips, commands, recipes |
 | `card` | A media card flies in with a name sticker, caption, a speech bubble with a live speaking meter, and an optional prompt panel | Characters, products, features, tips with a prompt |
 | `chat` | A chat window: messages appear, answers type out, an optional stamp slams on | Hooks, before/after demos |
 | `list` | Rows slide in on their words | Steps, tips, agendas |
@@ -139,12 +149,10 @@ story.json ─┬─ voices.py ──► word timings for voices/*.mp3 (faster-w
 
 ## Example credits
 
-- Characters in `examples/smoothie-squad` are drawn by
-  [`make-media.mjs`](examples/smoothie-squad/make-media.mjs); regenerate them
-  with `npm run example:media`.
-- Example voices were made with ElevenLabs' default voices.
+- Example voices: Sarah (English) and Julia (French), ElevenLabs voices, on
+  `eleven_multilingual_v2`.
 - Font: [Geist](https://fonts.google.com/specimen/Geist) (SIL Open Font License), loaded from Google Fonts.
-- "Smoothie Squad" and "Sleep Notes" are made-up names; `example.com` is a reserved example domain.
+- "Daybreak" and "Brightbook" are made-up names; `example.com` is a reserved example domain.
 
 ## License
 
