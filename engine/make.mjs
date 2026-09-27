@@ -194,7 +194,7 @@ async function frames() {
   mkdirSync(dir, { recursive: true });
   await withPage(async (page, info) => {
     printTimeline(info);
-    if (info.problems.length && !forceRender) throw new Error(`${info.problems.length} problem(s) above: fix them in story.json first (run stills to check)`);
+    if (info.problems.length && !forceRender) throw new Error(`${info.problems.length} problem(s) above: fix them in story.json, then run again`);
     const n = Math.round(info.meta.duration * FPS);
     const t0 = Date.now();
     for (let f = 0; f < n; f++) {
