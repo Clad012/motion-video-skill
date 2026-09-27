@@ -5,6 +5,14 @@
     python engine/voices.py <project> --list           list the voices on your ElevenLabs account
     python engine/voices.py <project> --check-lines    transcribe each line and compare with its text
     python engine/voices.py <project> --check <audio>  transcribe a mix (e.g. build/soundtrack.wav)
+    python engine/voices.py <project> --import         re-time voice files you dropped in voices/
+
+Bring your own voice files: put voices/<scene id>.mp3 (or .wav/.m4a/.ogg)
+there, made with any tool (another TTS, a recording, an ElevenLabs account
+connected through an integration). New or changed files are timed
+automatically: from voices/<scene id>.alignment.json when present (the
+ElevenLabs "with-timestamps" response), else from faster-whisper when it is
+installed, else estimated across the speech found in the file.
 
 Lines come from every scene with a "voice" in story.json. They are saved to
 <project>/voices/<scene>.mp3 with word timings in <project>/voices/voices.json,
@@ -105,13 +113,91 @@ def estimated_words(text):
     return out
 
 
+AUDIO_EXTS = (".mp3", ".wav", ".m4a", ".ogg")
+
+
+def ffmpeg_path():
+    if os.environ.get("FFMPEG"):
+        return os.environ["FFMPEG"]
+    from shutil import which
+    if which("ffmpeg"):
+        return "ffmpeg"
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def speech_span(path):
+    """Where speech starts and ends in a file, from ffmpeg's silence detection."""
+    import subprocess
+    err = subprocess.run([ffmpeg_path(), "-hide_banner", "-i", path, "-af", "silencedetect=noise=-38dB:d=0.12", "-f", "null", "-"], capture_output=True, text=True).stderr
+    dur = re.search(r"Duration: (\d+):(\d+):([\d.]+)", err)
+    total = int(dur.group(1)) * 3600 + int(dur.group(2)) * 60 + float(dur.group(3)) if dur else 0.0
+    starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", err)]
+    ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", err)]
+    begin = ends[0] if starts and starts[0] <= 0.02 and ends else 0.0
+    finish = starts[-1] if starts and starts[-1] > begin and (not ends or starts[-1] > ends[-1]) else total
+    return begin, finish
+
+
+def whisper_words(path, language):
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        return None
+    model = WhisperModel(os.environ.get("WHISPER_MODEL", "small"), device="cpu", compute_type="int8")
+    segments, _ = model.transcribe(path, language=language, word_timestamps=True)
+    return [{"w": w.word.strip(), "start": w.start, "end": w.end} for seg in segments for w in (seg.words or [])]
+
+
+def map_words(script, heard):
+    """The script's exact words, with the times of the words that were heard."""
+    a = [w.lower().strip("'’-.,!?") for w in script]
+    b = [h["w"].lower().strip("'’-.,!?") for h in heard]
+    times = [None] * len(a)
+    matcher = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            for k in range(i2 - i1):
+                times[i1 + k] = (heard[j1 + k]["start"], heard[j1 + k]["end"])
+        elif tag == "replace":
+            t0, t1 = heard[j1]["start"], heard[j2 - 1]["end"]
+            step = (t1 - t0) / (i2 - i1)
+            for k in range(i2 - i1):
+                times[i1 + k] = (t0 + k * step, t0 + (k + 1) * step)
+    # Words nobody heard: spread them between their neighbours.
+    for i in range(len(times)):
+        if times[i] is None:
+            prev = next((times[k][1] for k in range(i - 1, -1, -1) if times[k]), 0.0)
+            nxt = next((times[k][0] for k in range(i + 1, len(times)) if times[k]), prev + 0.3)
+            times[i] = (prev, max(prev + 0.05, (prev + nxt) / 2))
+    return [{"w": w, "start": round(t[0], 3), "end": round(t[1], 3)} for w, t in zip(script, times)]
+
+
+def import_file(folder, scene_key, text, language):
+    """Word timings for a voice file made elsewhere; returns (words, method)."""
+    audio = next(os.path.join(folder, scene_key + e) for e in AUDIO_EXTS if os.path.exists(os.path.join(folder, scene_key + e)))
+    align_path = os.path.join(folder, f"{scene_key}.alignment.json")
+    if os.path.exists(align_path):
+        data = json.load(open(align_path, encoding="utf8"))
+        words = words_from_alignment(data.get("alignment") or data)
+        return audio, words, "alignment"
+    script = spoken_words(text)
+    heard = whisper_words(audio, language)
+    if heard:
+        return audio, map_words(script, heard), "faster-whisper"
+    begin, finish = speech_span(audio)
+    est = estimated_words(text)
+    scale = (finish - begin) / max(0.1, est[-1]["end"]) if est else 1
+    return audio, [{"w": w["w"], "start": round(begin + w["start"] * scale, 3), "end": round(begin + w["end"] * scale, 3)} for w in est], "estimate"
+
+
 def scene_lines(story):
     for i, sc in enumerate(story["scenes"]):
         if sc.get("voice"):
             yield sc.get("id") or f"s{i + 1}", sc["voice"]
 
 
-def generate(project, story, force):
+def generate(project, story, force, reimport=False):
     if not any(True for _ in scene_lines(story)):
         print("no scene has a voice: nothing to generate")
         return
@@ -131,6 +217,16 @@ def generate(project, story, force):
         text = voice["text"]
         old = index.get(scene_key)
         mp3 = os.path.join(folder, f"{scene_key}.mp3")
+        dropped = next((os.path.join(folder, scene_key + e) for e in AUDIO_EXTS if os.path.exists(os.path.join(folder, scene_key + e))), None)
+        # A voice file made elsewhere: time it instead of generating one.
+        if dropped and (reimport or not old or (old.get("imported") and old.get("mtime") != os.path.getmtime(dropped)) or (old.get("imported") and old.get("text") != text)):
+            audio, words, method = import_file(folder, scene_key, text, language)
+            fresh[scene_key] = {"text": text, "who": who, "imported": True, "method": method, "mtime": os.path.getmtime(audio), "file": f"voices/{os.path.basename(audio)}", "speechStart": words[0]["start"], "speechEnd": words[-1]["end"], "words": words}
+            print(f"  {scene_key}: imported {os.path.basename(audio)} ({method}) {words[-1]['end'] - words[0]['start']:.2f}s")
+            continue
+        if old and old.get("imported") and dropped and not force:
+            fresh[scene_key] = old
+            continue
         unchanged = old and old.get("text") == text and old.get("voiceId") == voice_id and old.get("model") == model
         if unchanged and not force and (old.get("synthetic") or os.path.exists(mp3)) and not (old.get("synthetic") and key and voice_id):
             fresh[scene_key] = old
@@ -170,15 +266,25 @@ def similarity(a, b):
     return difflib.SequenceMatcher(None, norm_words(a), norm_words(b)).ratio()
 
 
+def heard_text(project, path, language):
+    """What a file says: ElevenLabs speech-to-text with a key, else faster-whisper."""
+    key = load_key(project)
+    if key:
+        return transcribe(key, path, language).get("text", "")
+    words = whisper_words(path, language)
+    if words is None:
+        sys.exit("Checking needs ELEVENLABS_API_KEY or faster-whisper (pip install faster-whisper)")
+    return " ".join(w["w"] for w in words)
+
+
 def check_lines(project, story):
-    key = load_key(project) or sys.exit("ELEVENLABS_API_KEY needed for --check-lines")
     index = json.load(open(os.path.join(project, "voices", "voices.json"), encoding="utf8"))
     bad = 0
     for scene_key, line in index.items():
         if line.get("synthetic"):
             print(f"  {scene_key}: (estimated, no audio)")
             continue
-        heard = transcribe(key, os.path.join(project, line["file"]), story.get("language")).get("text", "")
+        heard = heard_text(project, os.path.join(project, line["file"]), story.get("language"))
         score = similarity(line["text"], heard)
         flag = "OK   " if score >= 0.85 else "CHECK"
         bad += score < 0.85
@@ -187,9 +293,15 @@ def check_lines(project, story):
 
 
 def check_mix(project, story, audio):
-    key = load_key(project) or sys.exit("ELEVENLABS_API_KEY needed for --check")
-    res = transcribe(key, audio, story.get("language"))
-    words = [w for w in res.get("words", []) if w.get("type") == "word"]
+    key = load_key(project)
+    if key:
+        res = transcribe(key, audio, story.get("language"))
+        words = [{"text": w["text"], "start": w["start"]} for w in res.get("words", []) if w.get("type") == "word"]
+    else:
+        found = whisper_words(audio, story.get("language"))
+        if found is None:
+            sys.exit("Checking needs ELEVENLABS_API_KEY or faster-whisper (pip install faster-whisper)")
+        words = [{"text": w["w"], "start": w["start"]} for w in found]
     print("heard in the mix:")
     line, start = [], None
     for w in words:
@@ -232,7 +344,7 @@ def main():
     elif "--check" in opts:
         check_mix(project, story, opts[opts.index("--check") + 1])
     else:
-        generate(project, story, "--force" in opts)
+        generate(project, story, "--force" in opts, "--import" in opts)
 
 
 if __name__ == "__main__":

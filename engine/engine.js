@@ -35,7 +35,8 @@
   const col = (c, fallback = style.accent ?? "violet") => PALETTE[c] ?? (typeof c === "string" && c.startsWith("#") ? c : PALETTE[fallback] ?? fallback);
   const ACCENT = col(style.accent ?? "violet");
   const FONT = `"${style.font ?? "Geist"}", system-ui, sans-serif`;
-  const BEAT = 60 / (S.music?.bpm ?? 100);
+  const STYLE_BPM = { playful: 100, lofi: 80, upbeat: 118, cinematic: 90, chiptune: 128, tropical: 102, corporate: 110, ambient: 72 };
+  const BEAT = 60 / (S.music?.bpm ?? STYLE_BPM[S.music?.style] ?? 100);
   const labels = { now: "now", number: "No.", ...(S.labels ?? {}) };
 
   /* ---------------------------------------------------------------- maths */
@@ -581,10 +582,9 @@
     cues(sc, add) {
       const gathered = sc.prev?.type === "grid";
       if (gathered) {
-        let r = sc.start - 0.6, k = 0;
+        add(sc.start - 0.6, "drumroll", { dur: 0.58, gain: 0.8 });
         add(sc.start, "slide", { from: 300, to: 1300, dur: 0.55 });
         add(sc.start + 0.05, "whoosh", { dur: 0.5 });
-        while (r < sc.start - 0.02) { add(r, "roll", { gain: 0.15 + 0.35 * k / 12 }); r += 0.075 - 0.05 * (r - sc.start + 0.6) / 0.6; k++; }
       }
       const settle = sc.start + (gathered ? 0.6 : 0.15);
       add(settle, "tada");
@@ -683,7 +683,12 @@
     const add = (t, kind, extra = {}) => { if (t >= 0 && t < DURATION) c.push({ t: +t.toFixed(3), kind, ...extra }); };
     for (const sc of scenes) {
       if (sc.v) add(sc.start + sc.voiceAt - sc.v.speechStart, "voice", { key: sc.key, end: +(sc.start + sc.voiceAt + sc.speech).toFixed(3) });
-      SCENES[sc.type]?.cues(sc, add);
+      if (S.autoSfx !== false && sc.autoSfx !== false) SCENES[sc.type]?.cues(sc, add);
+      // Sounds placed by hand: a library effect ("kind") or your own file ("file").
+      for (const snd of sc.sounds ?? []) {
+        const { at, ...rest } = snd;
+        add(when(sc, at, 0), snd.file ? "file" : snd.kind ?? "pop", { ...rest, custom: true });
+      }
     }
     return c.sort((a, b) => a.t - b.t);
   }
@@ -691,7 +696,7 @@
   function buildMeta() {
     return {
       duration: DURATION, beat: BEAT, bpm: 60 / BEAT, width: W, height: H,
-      music: { enabled: S.music?.enabled !== false, key: S.music?.key ?? "C", volume: S.music?.volume ?? 0.55, sfx: S.music?.sfx !== false, progression: S.music?.progression ?? ["C", "Am", "F", "G"] },
+      music: { enabled: S.music?.enabled !== false, style: S.music?.style ?? "playful", file: S.music?.file ?? null, key: S.music?.key ?? "C", volume: S.music?.volume ?? 0.55, sfx: S.music?.sfx !== false, progression: S.music?.progression ?? ["C", "Am", "F", "G"] },
       scenes: scenes.map((sc) => ({ key: sc.key, type: sc.type, start: sc.start, len: sc.len, mood: sc.mood ?? DEFAULT_MOOD[sc.type] ?? "groove" })),
     };
   }

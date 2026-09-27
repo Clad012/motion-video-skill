@@ -10,6 +10,7 @@
  *   node engine/make.mjs <project> audio          music + sound effects + voices -> soundtrack.wav
  *   node engine/make.mjs <project> encode         out/<name>.mp4 + a contact sheet of it
  *   node engine/make.mjs <project> check          transcribes the final mix (ElevenLabs), per line
+ *   node engine/make.mjs gallery [folder]         every sound effect and music style as MP3s (docs/sounds)
  *
  * Options: --fps 30 (draft speed; default story.format.fps or 60), --force (redo voices).
  * Env: FFMPEG, PYTHON, ELEVENLABS_API_KEY.
@@ -26,6 +27,12 @@ const flag = (name) => { const i = args.indexOf(`--${name}`); if (i < 0) return 
 const fpsFlag = flag("fps");
 const force = flag("force");
 const [projectArg, step = "all", ...rest] = args;
+if (projectArg === "gallery") {
+  // Every sound effect and music style, as MP3s, into docs/sounds (or a folder you name).
+  const py = [process.env.PYTHON, join(ROOT, ".venv/bin/python"), "python3"].find((p) => p && spawnSync(p, ["-c", "import numpy"]).status === 0);
+  const r = spawnSync(py, [join(ENGINE, "sound.py"), "--gallery", resolve(step === "all" ? join(ROOT, "docs/sounds") : step)], { stdio: "inherit" });
+  process.exit(r.status ?? 1);
+}
 if (!projectArg) { console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]); process.exit(1); }
 
 const PROJECT = resolve(projectArg);

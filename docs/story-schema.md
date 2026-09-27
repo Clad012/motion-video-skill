@@ -26,11 +26,14 @@ my-video/
 | `style.accent` | colour name or hex | `"violet"` | Default highlight colour. |
 | `style.palette` | `{name: hex}` | 8 built-ins | Adds or overrides named colours. Built-ins: `blue violet green amber rose teal copper slate`. |
 | `style.decor` | boolean | `true` | Soft floating circles behind scenes. |
-| `music.bpm` | number | 100 | Scene lengths snap to this beat. |
+| `music.style` | name | `"playful"` | `playful`, `lofi`, `upbeat`, `cinematic`, `chiptune`, `tropical`, `corporate`, `ambient`. Hear them in [sounds.md](sounds.md). |
+| `music.file` | path | none | Your own music track instead of a style (looped, faded, ducked under voices). |
+| `music.bpm` | number | the style's | Scene lengths snap to this beat. |
 | `music.key` | `C`…`B` (`F#`, `Bb`…) | `"C"` | Transposes all music and melodic effects. |
 | `music.progression` | chord names | `["C","Am","F","G"]` | One chord per groove scene, cycling. Written in C; transposed to `key`. |
 | `music.volume` | 0–1 | 0.55 | Music level (sound effects and voices are separate). |
 | `music.enabled` / `music.sfx` | boolean | `true` | Turn music or sound effects off. |
+| `autoSfx` | boolean | `true` | `false` keeps only the sounds scenes place by hand (see `sounds`). |
 | `voices` | `{who: voiceId}` | | ElevenLabs voice ids per speaker. List yours: `python engine/voices.py <project> --list`. |
 | `voiceSettings.model` | string | `"eleven_v3"` | `eleven_v3` understands audio tags like `[excited]`; `eleven_multilingual_v2` is steadier. |
 | `voiceSettings.stability`, `.similarity` | 0–1 | 0.5, 0.8 | Passed to ElevenLabs. `eleven_v3` accepts stability 0, 0.5 or 1. |
@@ -48,6 +51,19 @@ my-video/
 | `duration` | Minimum length in seconds. With a voice, the scene is at least as long as the line plus `pad` (0.55 s). Always rounded up to whole beats. |
 | `background` | Colour name or hex. Tinted towards paper unless `"tint": false`. `"paper"` for plain. Changes wipe in as a circle. |
 | `mood` | Music for this scene: `tension`, `calm`, `groove`, `run`, `outro`, `none`. Defaults: pileup tension, title and fan calm, card and list groove, grid run, logo outro. |
+| `sounds` | Extra sound effects: `[{ "at": "word", "kind": "whoosh", "gain": 1, "pitch": 1, "dur": 0.5 }]`, or `{ "at": 1.2, "file": "sounds/hit.wav" }` for your own. 43 kinds, listed with audio in [sounds.md](sounds.md). |
+| `autoSfx` | `false` turns off the effects this scene type plays by itself. |
+
+### Voice files made elsewhere
+
+`voices/<scene id>.mp3` (or `.wav`, `.m4a`, `.ogg`) is used as that scene's
+voice when you put it there yourself: from another text-to-speech tool, an
+ElevenLabs account connected through an integration, or a recording. The
+`voices` step times its words, from `voices/<scene id>.alignment.json` when
+present (the ElevenLabs with-timestamps response), else with faster-whisper
+when installed (`pip install faster-whisper`; `WHISPER_MODEL=small` by default),
+else by estimating across the speech it detects. `voice.text` must still hold
+what is said: word sync and checks rely on it. `--import` re-times every file.
 
 ### Timing values (`at`, `until`)
 

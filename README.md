@@ -17,8 +17,12 @@ MP4. Vertical for TikTok, Reels and Shorts, or 16:9 and square.
 - **Voice-driven timing.** Each scene lasts as long as its spoken line, snapped
   to the music's beat. Titles, list items and word stickers land on the exact
   word (`"at": "Relax"`).
-- **Nothing to license.** Music and sound effects are synthesized; the example
-  characters are drawn by a script. Bring your own media.
+- **Nothing to license.** 8 music styles and 43 sound effects, all
+  synthesized ([listen to them](docs/sounds.md)); the example characters are
+  drawn by a script. Bring your own media, music and effects if you like.
+- **Voices from anywhere.** Generate with an ElevenLabs key, or drop in voice
+  files from any tool or connected account; word timings come from
+  ElevenLabs, faster-whisper, or an estimate.
 - **Agent-ready.** [`SKILL.md`](SKILL.md) is a step-by-step playbook for an AI
   agent, including how to review stills and verify audio by transcription,
   since agents cannot watch or listen.
@@ -50,10 +54,14 @@ node engine/make.mjs examples/minimal all
 1. Copy an example folder: `cp -r examples/minimal my-video`.
 2. Put your videos and images in `my-video/media/` and list them under `media`.
 3. Write the scenes in `my-video/story.json` ([reference](docs/story-schema.md)).
-4. Add voices (optional): set `ELEVENLABS_API_KEY`, pick voices with
-   `.venv/bin/python engine/voices.py my-video --list`, map speakers to voice
-   ids under `voices`, and give scenes a `voice`.
-5. Iterate on stills, then render:
+4. Add voices (optional): give scenes a `voice`, then either set
+   `ELEVENLABS_API_KEY` (pick voices with `.venv/bin/python engine/voices.py
+   my-video --list` and map speakers under `voices`), or put your own files in
+   `my-video/voices/<scene id>.mp3` and let the `voices` step time them
+   (`pip install faster-whisper` for precise timings).
+5. Pick a music style and sprinkle effects: `"music": { "style": "lofi" }`,
+   and per scene `"sounds": [{ "at": "word", "kind": "cash" }]`.
+6. Iterate on stills, then render:
 
 ```bash
 node engine/make.mjs my-video voices     # generate or refresh voice lines
@@ -109,9 +117,11 @@ story.json ─┬─ voices.py ──► voices/*.mp3 + word timings (ElevenLabs
   and screenshotted per frame. Media is pre-extracted to JPEG frames because
   headless Chromium cannot decode H.264, and so seeking is exact.
 - **Sound**: music follows each scene's mood (`tension`, `calm`, `groove`,
-  `run`, `outro`) at the story's tempo and key; effects (pops, whooshes, dings,
-  boings, thuds, a slide whistle, a ta-da) are placed on the renderer's cues;
-  music ducks under voices.
+  `run`, `outro`) in the story's style, tempo and key; 43 effects (pops,
+  whooshes, risers, impacts, cash registers, record scratches, a ta-da…) are
+  placed on the renderer's cues and on any `sounds` you add; music ducks under
+  voices. Catalogue with audio: [docs/sounds.md](docs/sounds.md); regenerate it
+  with `node engine/make.mjs gallery`.
 - **Voices**: ElevenLabs text-to-speech with character timestamps, so on-screen
   events can sync to words; `--check-lines` and `check` run speech-to-text to
   confirm what was actually said.

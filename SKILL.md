@@ -1,6 +1,6 @@
 ---
 name: motion-video
-description: Make playful, polished motion-graphics videos (explainers, product promos, teasers, announcements, tutorials, social clips for TikTok/Reels/Shorts or 16:9) from a single story.json. Kinetic typography, media cards, lists, grids and logo endings, optional character voices via ElevenLabs synced word by word, synthesized music and sound effects, rendered frame-exact to MP4. Use when someone asks for an animated video, a motion graphic, a short vertical video, or a narrated explainer.
+description: Make playful, polished motion-graphics videos (explainers, product promos, teasers, announcements, tutorials, social clips for TikTok/Reels/Shorts or 16:9) from a single story.json. Kinetic typography, media cards, lists, grids and logo endings, character voices synced word by word (ElevenLabs by API key, or voice files from any tool or connected account), 8 synthesized music styles and 43 sound effects, rendered frame-exact to MP4. Use when someone asks for an animated video, a motion graphic, a short vertical video, or a narrated explainer.
 ---
 
 # Motion video
@@ -17,8 +17,9 @@ Repository layout:
 engine/make.mjs      the pipeline (run everything from here)
 engine/engine.js     scene types + timeline + cues (the renderer)
 engine/voices.py     ElevenLabs voices with word timings, speech-to-text checks
-engine/sound.py      music, sound effects, voice mix -> soundtrack.wav
+engine/sound.py      music + effects + voices -> soundtrack.wav (sfx.py, music.py)
 docs/story-schema.md every story.json field (read it before writing one)
+docs/sounds.md       the 8 music styles and 43 sound effects, each with an MP3
 examples/            smoothie-squad (every scene type, voices), minimal (text only, 16:9)
 ```
 
@@ -30,10 +31,18 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
 ffmpeg is used from PATH, or from `FFMPEG`, or from the `imageio-ffmpeg`
-package installed above, so nothing else is required. Voices need
-`ELEVENLABS_API_KEY` (environment, or `.env` / `.env.local` in the project or
-repository). Without it everything still works: voice lines get estimated
-timings and the video is silent where they would be.
+package installed above, so nothing else is required.
+
+Voices come from one of three places, in this order of preference:
+1. **Voice files you make yourself** (another TTS, an ElevenLabs account
+   connected through an integration or toolkit, a recording): save each line
+   as `voices/<scene id>.mp3`; the `voices` step times the words (faster-whisper
+   when installed, which is the precise option: `pip install faster-whisper`).
+2. **An API key**: `ELEVENLABS_API_KEY` in the environment or a `.env` /
+   `.env.local` file; the `voices` step generates every line with word timings.
+3. **Neither**: estimated timings, and the video is silent where voices go.
+Never ask a user to paste an API key into a chat when their account is
+already connected another way.
 
 ## Workflow
 
@@ -93,16 +102,36 @@ per speaker (`python engine/voices.py <project> --list`); give each character
 a clearly different voice and the narrator a warm, steady one. Pick colours
 from the palette or add your own.
 
-### 5. Generate voices, then check them by ear, through transcription
+### 5. Voices, then check them by ear, through transcription
+With your own voice files (connected account, other tool): write each scene's
+line to `voices/<scene id>.mp3` using exactly the scene's `voice.text` (drop
+audio tags like `[excited]` if the tool does not understand them), one voice
+per speaker, same model and settings for all. Then:
 ```bash
-node engine/make.mjs <project> voices
-.venv/bin/python engine/voices.py <project> --check-lines
+node engine/make.mjs <project> voices     # times new files, or generates with a key
+.venv/bin/python engine/voices.py <project> --check-lines   # needs a key
 ```
-Every line should say OK. For each CHECK, read "heard": fix the text (rephrase,
-spell phonetically, change the voice) and run `voices` again. It only
-regenerates lines whose text or voice changed; `--force` redoes all.
+With a key, every line should say OK. For each CHECK, read "heard": fix the
+text (rephrase, spell phonetically, change the voice) and run `voices` again.
+It only regenerates lines whose text or voice changed; `--force` redoes all;
+`--import` re-times files you replaced. Without a key, check each file with
+faster-whisper: `--check-lines` and `check` use it automatically when no key
+is set.
+
+### 5b. Choose the sound
+Pick a music style that fits the tone (`docs/sounds.md` describes each):
+playful for light and funny, lofi for calm explainers, upbeat for launches,
+cinematic for reveals, chiptune for games and tech, tropical for travel and
+food, corporate for product tours, ambient for wellness. Scenes already play
+their own effects; add a few by hand where a moment deserves one (`sounds`:
+a squeak on a joke word, a `cash` on a price, a `rise` into a reveal, one
+`impact` at most). Less is more: 2 to 6 hand-placed sounds in a 30 s video.
 
 ### 6. Render stills and look at them
+(If your environment forbids looking at images, skip the contact sheet but
+still run the command: its text output, the timeline and the warnings, catches
+most mistakes. Fix every warning.)
+
 ```bash
 node engine/make.mjs <project> stills            # 2 per scene
 node engine/make.mjs <project> stills 1.2 4.8 9  # or chosen times
@@ -120,16 +149,21 @@ Fix story.json (or the engine) and repeat until the sheet is clean.
 ### 7. Render the video
 ```bash
 node engine/make.mjs <project> all          # prepare, voices, frames, audio, encode
-node engine/make.mjs <project> all --fps 30 # twice as fast, for drafts
+node engine/make.mjs <project> all --fps 30 # twice as fast; use it on small machines
 ```
+On a one-CPU machine rendering runs at a few frames per second: a 30 s video at
+30 fps takes several minutes, so run it in the background when you can.
 Or step by step: `frames`, `audio`, `encode`. The output is
 `out/<title>.mp4` plus `out/<title>-sheet.jpg` (one frame every 1.5 s).
 Rendering runs at about 10 to 20 frames per second.
 
 ### 8. Verify the final file
 - Look at `out/<title>-sheet.jpg`.
-- `node engine/make.mjs <project> check` transcribes the final mix and shows
-  each expected line as OK or CHECK: voices must be audible over the music.
+- `node engine/make.mjs <project> check` transcribes the final mix (ElevenLabs
+  with a key, faster-whisper without) and shows each expected line as OK or
+  CHECK: voices must be audible over the music.
+- `ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json out/<title>.mp4`:
+  the planned duration and size, and an audio stream.
 - Report the length, the format and anything you could not verify (for
   example: nobody has listened to the tone of the voices).
 
