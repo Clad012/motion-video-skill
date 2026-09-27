@@ -14,6 +14,7 @@ of its time, so a still is exactly the frame that ships.
 engine/make.mjs      every command below
 docs/story-schema.md every story.json field: read it before writing one
 docs/sounds.md       the 8 music styles and 43 sound effects
+docs/voices.md       real ElevenLabs voice ids (English and French) and models
 examples/            smoothie-squad (all scene types, 7 voices), minimal (text only, 16:9)
 ```
 
@@ -122,10 +123,13 @@ The engine doesn't generate speech: you make each line with the text-to-speech
 tools you have, and it times them.
 
 With ElevenLabs connected through Composio:
-1. Pick voices with `ELEVENLABS_GET_VOICES`: one per speaker, clearly
-   different for characters, warm and steady for a narrator. Keep the ids in
-   `story.json` under `voices` so every take uses the same one.
-2. For each scene with a `voice`, run `ELEVENLABS_ELEVENLABS_TEXT_TO_SPEECH`
+1. Pick voices from `docs/voices.md` (checked English and French ids) or from
+   what `ELEVENLABS_GET_VOICES` returns for the account; never write an id from
+   memory. One per speaker, clearly different for characters, warm and steady
+   for a narrator. Keep the ids in `story.json` under `voices` so every take
+   uses the same one. A French voice from the list that the account lacks is
+   added with `ELEVENLABS_ADD_SHARING_VOICE` (its `public_user_id` is listed).
+2. For each scene with a `voice`, run `ELEVENLABS_TEXT_TO_SPEECH`
    (fetch its schema first) with `voice_id`, `text` = the scene's `voice.text`,
    `model_id` = `eleven_multilingual_v2` (or `eleven_v3`, which also plays tags
    like `[excited]`; with other models remove the tags from the text) and

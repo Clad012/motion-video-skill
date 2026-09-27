@@ -23,7 +23,7 @@ MP4. Vertical for TikTok, Reels and Shorts, or 16:9 and square.
 - **Voices from any tool.** Make each line with the text-to-speech you have
   (an ElevenLabs account connected through Composio, another TTS, a
   recording), drop the files in `voices/`, and the engine times every word
-  with faster-whisper.
+  with faster-whisper. [Checked voice ids](docs/voices.md) in English and French.
 - **Agent-ready.** [`SKILL.md`](SKILL.md) is a step-by-step playbook for an AI
   agent, including how to review stills and verify audio by transcription,
   since agents cannot watch or listen.
