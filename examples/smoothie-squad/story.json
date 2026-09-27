@@ -1,0 +1,157 @@
+{
+  "title": "Smoothie Squad",
+  "format": { "width": 1080, "height": 1920, "fps": 60 },
+  "language": "en",
+  "style": {
+    "font": "Geist",
+    "paper": "#f4f3ef",
+    "ink": "#1c1c1b",
+    "accent": "berry",
+    "palette": {
+      "berry": "#E4476A",
+      "banana": "#E8B923",
+      "kiwi": "#5FA83C",
+      "blueberry": "#4F6BD8",
+      "mango": "#F28A2E",
+      "orange": "#F07A1C"
+    }
+  },
+  "music": { "bpm": 100, "key": "C", "progression": ["C", "Am", "F", "G"] },
+  "voiceSettings": { "model": "eleven_v3" },
+  "voices": {
+    "narrator": "JBFqnCBsd6RMkjVDRZzb",
+    "banana": "TX3LPaxmHKxFdv7VOQHJ",
+    "strawberry": "cgSgspJ2msm6clMCkdW9",
+    "kiwi": "IKne3meq5aSn9XLyUdCD",
+    "blueberry": "pFZP5JQG7iQjIQuC4Bku",
+    "mango": "iP95p4xoKVk53GoZ742B",
+    "orange": "FGY2WhTYpPnrIDTdsKH5"
+  },
+  "media": {
+    "banana": { "full": "media/banana-full.mp4", "avatar": "media/banana-avatar.mp4" },
+    "strawberry": { "full": "media/strawberry-full.mp4", "avatar": "media/strawberry-avatar.mp4" },
+    "kiwi": { "full": "media/kiwi-full.mp4", "avatar": "media/kiwi-avatar.mp4" },
+    "blueberry": { "full": "media/blueberry-full.mp4", "avatar": "media/blueberry-avatar.mp4" },
+    "mango": { "full": "media/mango-full.mp4", "avatar": "media/mango-avatar.mp4" },
+    "orange": { "full": "media/orange-full.mp4", "avatar": "media/orange-avatar.mp4" }
+  },
+  "scenes": [
+    {
+      "id": "chaos",
+      "type": "pileup",
+      "voice": { "who": "narrator", "text": "Snooze. Meetings. An empty fridge... rough morning?" },
+      "items": [
+        { "icon": "A", "title": "Alarm", "body": "Snoozed 3 times", "color": "berry" },
+        { "icon": "C", "title": "Calendar", "body": "Stand-up in 5 minutes", "color": "blueberry" },
+        { "icon": "F", "title": "Fridge", "body": "Nothing but ketchup", "color": "slate" },
+        { "icon": "M", "title": "Mail", "body": "47 unread", "color": "blue" },
+        { "icon": "B", "title": "Bus", "body": "Leaves in 2 minutes", "color": "banana" },
+        { "icon": "W", "title": "Weather", "body": "Rain all day", "color": "teal" },
+        { "icon": "C", "title": "Coffee", "body": "Out of beans", "color": "copper" },
+        { "icon": "G", "title": "Gym", "body": "Skipped again", "color": "kiwi" },
+        { "icon": "M", "title": "Mail", "body": "Re: Re: Re: urgent", "color": "blue" },
+        { "icon": "P", "title": "Phone", "body": "Battery 4%", "color": "berry" },
+        { "icon": "L", "title": "Laundry", "body": "Still in the machine", "color": "violet" },
+        { "icon": "R", "title": "Reminder", "body": "Water the plant", "color": "kiwi" }
+      ],
+      "slams": [
+        { "text": "Snooze", "at": "Snooze" },
+        { "text": "Meetings", "at": "Meetings" },
+        { "text": "Empty fridge", "at": "empty" }
+      ],
+      "headline": { "text": "rough morning?", "at": "rough", "color": "berry" }
+    },
+    {
+      "id": "reveal",
+      "type": "fan",
+      "background": "berry",
+      "voice": { "who": "narrator", "text": "Relax. The Smoothie Squad is here!" },
+      "lines": [
+        { "text": "Relax.", "at": "Relax", "until": "The", "breathe": true },
+        { "text": "The Smoothie", "at": "The" },
+        { "text": "Squad!", "at": "Squad", "big": true, "color": "berry", "confetti": true }
+      ],
+      "cards": ["banana", "strawberry", "kiwi", "blueberry", "mango", "orange"],
+      "cardsAt": "The"
+    },
+    {
+      "id": "banana", "type": "card", "media": "banana", "color": "banana", "background": "banana",
+      "name": "Banana", "caption": "Instant energy, zero effort.",
+      "bubble": "Peel me, blend me, let's go!",
+      "voice": { "who": "banana", "text": "[excited] Peel me, blend me, let's go!" }
+    },
+    {
+      "id": "strawberry", "type": "card", "media": "strawberry", "color": "berry", "background": "berry",
+      "name": "Strawberry", "caption": "Sweet, bright, a little extra.",
+      "bubble": "Did someone say pink?",
+      "voice": { "who": "strawberry", "text": "[giggles] Did someone say pink?" }
+    },
+    {
+      "id": "kiwi", "type": "card", "media": "kiwi", "color": "kiwi", "background": "kiwi",
+      "name": "Kiwi", "caption": "Fuzzy outside, zesty inside.",
+      "bubble": "Don't judge me by my fuzz!",
+      "voice": { "who": "kiwi", "text": "Oi! Don't judge me by my fuzz, mate!" }
+    },
+    {
+      "id": "blueberry", "type": "card", "media": "blueberry", "color": "blueberry", "background": "blueberry",
+      "name": "Blueberry", "caption": "Small berry, big personality.",
+      "bubble": "Small? I prefer concentrated.",
+      "voice": { "who": "blueberry", "text": "Small? I prefer... concentrated." }
+    },
+    {
+      "id": "mango", "type": "card", "media": "mango", "color": "mango", "background": "mango",
+      "name": "Mango", "caption": "Tropical sunshine in a cup.",
+      "bubble": "Add me. Trust me.",
+      "voice": { "who": "mango", "text": "Add me. Trust me. You won't regret it." }
+    },
+    {
+      "id": "orange", "type": "card", "media": "orange", "color": "orange", "background": "orange",
+      "name": "Orange", "caption": "The zest of the party.",
+      "bubble": "Squeeze the day!",
+      "voice": { "who": "orange", "text": "[cheerfully] Squeeze the day!" }
+    },
+    {
+      "id": "recipe",
+      "type": "list",
+      "title": "How to blend",
+      "voice": { "who": "narrator", "text": "Pick two fruits. Add a splash of milk. Blend for thirty seconds." },
+      "items": [
+        { "text": "Pick two fruits", "at": "Pick", "color": "banana" },
+        { "text": "Add a splash of milk", "at": "Add", "color": "blueberry" },
+        { "text": "Blend for 30 seconds", "at": "Blend", "color": "berry" }
+      ]
+    },
+    {
+      "id": "squad",
+      "type": "grid",
+      "voice": { "who": "narrator", "text": "Six fruits. One blender. Endless mornings." },
+      "lines": [
+        { "text": "Six fruits.", "at": "Six" },
+        { "text": "One blender.", "at": "One", "color": "berry" }
+      ],
+      "members": [
+        { "media": "banana", "color": "banana" },
+        { "media": "strawberry", "color": "berry" },
+        { "media": "kiwi", "color": "kiwi" },
+        { "media": "blueberry", "color": "blueberry" },
+        { "media": "mango", "color": "mango" },
+        { "media": "orange", "color": "orange" }
+      ],
+      "footer": { "text": "Mix your own squad.", "at": "Endless" }
+    },
+    {
+      "id": "end",
+      "type": "logo",
+      "voice": { "who": "narrator", "text": "Smoothie Squad. Blend happy." },
+      "name": "Smoothie Squad",
+      "nameAt": "Smoothie",
+      "monogram": "S",
+      "color": "berry",
+      "tagline": [
+        { "text": "Blend", "at": "Blend" },
+        { "text": "happy.", "at": "happy", "color": "berry" }
+      ],
+      "url": "example.com"
+    }
+  ]
+}

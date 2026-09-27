@@ -1,0 +1,39 @@
+{
+  "title": "Three sleep tips",
+  "format": { "width": 1920, "height": 1080, "fps": 30 },
+  "style": { "font": "Geist", "accent": "violet" },
+  "music": { "bpm": 96, "key": "D" },
+  "scenes": [
+    {
+      "type": "title",
+      "duration": 2.4,
+      "lines": [
+        { "text": "Sleep better", "at": 0.2 },
+        { "text": "tonight.", "at": 0.7, "big": true, "color": "violet", "confetti": true }
+      ]
+    },
+    {
+      "type": "list",
+      "background": "violet",
+      "title": "Three small habits",
+      "duration": 5.4,
+      "items": [
+        { "text": "Same bedtime, even on weekends", "at": 0.8, "color": "violet" },
+        { "text": "No screens for the last 30 minutes", "at": 2.0, "color": "teal" },
+        { "text": "A cool, dark bedroom", "at": 3.2, "color": "blue" }
+      ]
+    },
+    {
+      "type": "logo",
+      "duration": 3.6,
+      "name": "Sleep Notes",
+      "monogram": "Z",
+      "color": "violet",
+      "tagline": [
+        { "text": "Rest is", "at": 0.8 },
+        { "text": "a skill.", "at": 1.2, "color": "violet" }
+      ],
+      "url": "example.com"
+    }
+  ]
+}
