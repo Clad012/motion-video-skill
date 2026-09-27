@@ -18,9 +18,26 @@ docs/voices.md       real ElevenLabs voice ids (English and French) and models
 examples/            smoothie-squad (all scene types, 7 voices), minimal (text only, 16:9)
 ```
 
+## Get the engine
+
+Work from a clone of this repository. Clone it only when it is not there yet,
+otherwise update it, then check the machine:
+
+```bash
+E=~/motion-video-skill
+if [ -d "$E/.git" ]; then git -C "$E" pull -q --ff-only || true; else git clone -q --depth 1 https://github.com/Clad012/motion-video-skill.git "$E"; fi
+[ -e "$E/node_modules" ] || (cd "$E" && npm ci --omit=dev --silent)
+node "$E/engine/make.mjs" doctor
+```
+
+`npm ci` only fetches the engine's one Node package (it downloads no browser:
+the engine uses the Chrome, Chromium or Edge already installed). If your
+environment ships the engine's `node_modules` elsewhere, link it instead.
+
 ## Commands
 
-Run them from anywhere (`E` below is the engine folder).
+Run them from anywhere; `$E` is the clone (write its full path when your
+shell does not keep variables between commands).
 
 | Command | What it does |
 |---|---|
@@ -30,8 +47,8 @@ Run them from anywhere (`E` below is the engine folder).
 | `node $E/engine/make.mjs <project> all --fps 30` | Renders the MP4 to `<project>/out/`. |
 | `node $E/engine/make.mjs <project> check` | Transcribes the final mix: each voice line OK or CHECK. |
 
-`doctor` first. If it reports something missing, tell the user what (it prints
-the fix); don't install system software yourself.
+If `doctor` reports something missing, tell the user what (it prints the fix);
+don't install system software yourself.
 
 ## Workflow
 
