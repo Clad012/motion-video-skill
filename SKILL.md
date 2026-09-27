@@ -43,9 +43,9 @@ shell does not keep variables between commands).
 |---|---|
 | `node $E/engine/make.mjs doctor` | Checks that everything the engine needs is there. |
 | `node $E/engine/make.mjs <project> voices` | Times the voice files in `<project>/voices/`. |
-| `node $E/engine/make.mjs <project> stills [t…]` | Prints the timeline and warnings; saves stills and `build/contact-sheet.jpg`. |
-| `node $E/engine/make.mjs <project> all --fps 30` | Renders the MP4 to `<project>/out/`. |
-| `node $E/engine/make.mjs <project> check` | Transcribes the final mix: each voice line OK or CHECK. |
+| `node $E/engine/make.mjs <project> stills [t…]` | Prints the timeline, NOTES (fixed automatically) and PROBLEMS (block the render); saves stills and `build/contact-sheet.jpg`. |
+| `node $E/engine/make.mjs <project> all --fps 30` | Renders the MP4 to `<project>/out/`. Refuses while PROBLEMS remain or a voice is buried under the music. |
+| `node $E/engine/make.mjs <project> check` | Transcribes each voice line where it plays in the final mix: OK, or CHECK with what was heard. |
 
 If `doctor` reports something missing, tell the user what (it prints the fix);
 don't install system software yourself.
@@ -63,7 +63,7 @@ One idea per scene, one short spoken line per scene:
 
 | Beat | Scene type | Job |
 |---|---|---|
-| Hook: the problem | `pileup` or `title` | Make the pain visible in 3 to 6 s. |
+| Hook: the problem | `pileup`, `chat` or `title` | Make the pain visible in 3 to 6 s. |
 | Turn | `title` or `fan` | Relief, the reveal. |
 | Proof, one by one | `card` × 3 to 7 | Each thing, feature or person speaks for itself. |
 | How it works | `list` | 3 to 5 steps or tips. |
@@ -76,6 +76,7 @@ Drop what you don't need: an announcement can be `title` → `list` → `logo`.
 - On-screen text is shorter than speech: a bubble echoes the line in fewer
   words, a caption says what the thing is.
 - Sync on words: `"at": "Relax"` lands an element when "Relax" is said.
+- One call to action, at the end. Never ask to save, like or follow in the hook.
 - Avoid words with an unfortunate near-homophone in the target language.
 - A name the voice says wrong: spell it phonetically in `voice.text` (keep the
   real spelling on screen); `at` references use the spoken spelling.
@@ -86,12 +87,28 @@ Portrait art (about 9:16) for cards, a square close-up (`"avatar"`) for grids;
 loops of 2 to 4 s are ideal. Use the user's screens, product shots and photos,
 or media they have the rights to. Without any, generate it (see
 `examples/smoothie-squad/make-media.mjs`, which draws characters as SVG).
+Media must show what the scene says. A decorative character, or another
+product's mascot, next to an unrelated tip is worse than no media: use a
+`chat`, `list` or `title` scene instead.
 
 ### 4. story.json
 Copy the closest example and read `docs/story-schema.md`. Then make it theirs
 with the next section.
 
 ### 5. Make it look like the brand
+
+Readability comes first, and the engine enforces it:
+- Every text reaches 4.5:1 contrast with what it sits on. A colour too light
+  for text (yellow, pastels) is drawn as a highlighter band behind dark text;
+  a fill too light for white text gets dark text. Each fix is a NOTE: better to
+  choose colours that need none.
+- No text below 40 px (at 1080 wide); long text wraps. Text that still does not
+  fit, and text in the top 6.5% or bottom 14% of a vertical frame (where the
+  platform's buttons and captions sit), are PROBLEMS: the render refuses until
+  you shorten or move them.
+- Never write your own visual components (caption strips, typing boxes, chat
+  windows) in `engine/engine.js` for a video: use the built-in scene fields
+  (`prompt`, `bubble`, `caption`, `chat`, `list`). They already meet these rules.
 
 Colours: name them once, use the names everywhere.
 ```json
@@ -104,6 +121,9 @@ Colours: name them once, use the names everywhere.
 - `font`: any Google Fonts family, with the weights you use.
 - `paper`: the base background; `ink`: all text; `accent`: the default highlight.
 - `palette`: your colour names (built-ins: `blue violet green amber rose teal copper slate`).
+- One accent, plus at most two support colours. Keep backgrounds `paper` or one
+  light tint of the accent for the whole video. Don't give each scene a new
+  colour, and never use grey backgrounds: they look dull and carry no meaning.
 - A scene's `background` takes a name or hex and is softened towards paper;
   add `"tint": false` for the full colour, `"paper"` for plain.
 - Colour one word: give it its own title line with `"color": "brand"`, or a
@@ -132,26 +152,30 @@ Sound (hear everything in `docs/sounds.md`):
   `"sounds": [{"at": "price", "kind": "cash"}, {"at": 1.2, "kind": "whoosh", "dur": 0.6}]`.
   2 to 6 hand-placed sounds in a 30 s video, one `impact` at most.
 
-Deeper changes (a new layout, a new scene type) go in `engine/engine.js`: each
-scene type has a `render(sc, t)` and a `cues(sc, add)` in the `SCENES` registry.
+A new scene type (only when no built-in scene fits, and never for a single
+video) goes in `engine/engine.js`: a `render(sc, t)` and a `cues(sc, add)` in the
+`SCENES` registry, using `readable`, `onFill`, `wrap` and `safe` for every text.
 
 ### 6. Voices
 The engine doesn't generate speech: you make each line with the text-to-speech
 tools you have, and it times them.
 
 With ElevenLabs connected through Composio:
-1. Pick voices from `docs/voices.md` (checked English and French ids) or from
-   what `ELEVENLABS_GET_VOICES` returns for the account; never write an id from
-   memory. One per speaker, clearly different for characters, warm and steady
-   for a narrator. Keep the ids in `story.json` under `voices` so every take
-   uses the same one. A French voice from the list that the account lacks is
-   added with `ELEVENLABS_ADD_SHARING_VOICE` (its `public_user_id` is listed).
+1. Pick voices from `docs/voices.md` only: every voice there is checked for the
+   language and its accent. A voice speaks only its own language: an English
+   voice never reads French, a Québécois or Acadian voice never reads a video
+   for France. `ELEVENLABS_GET_VOICES` lists voices "that can speak French"
+   with American, British and Canadian accents: don't pick from it. Never write
+   an id from memory. One voice per speaker, clearly different for characters,
+   warm and steady for a narrator; keep the ids in `story.json` under `voices`.
+   A voice from the list that the account lacks is added with
+   `ELEVENLABS_ADD_SHARING_VOICE` (its `public_user_id` is listed).
 2. For each scene with a `voice`, run `ELEVENLABS_TEXT_TO_SPEECH`
    (fetch its schema first) with `voice_id`, `text` = the scene's `voice.text`,
-   `model_id` = `eleven_multilingual_v2` (or `eleven_v3`, which also plays tags
-   like `[excited]`; with other models remove the tags from the text) and
-   `output_format` = `mp3_44100_128`. Always set `model_id`: the default is
-   English-only.
+   `model_id` and `output_format` = `mp3_44100_128`. Always set `model_id` (the
+   default is English-only): `eleven_multilingual_v2` for French and every
+   language other than English (the voices are checked with it; others drift
+   in accent); `eleven_v3` only for English lines that use tags like `[excited]`.
 3. The result's `data.file.s3url` is the audio. Download it where the engine
    runs: `curl -sfL "<s3url>" -o <project>/voices/<scene id>.mp3`.
 
@@ -166,8 +190,10 @@ can build and check before the voices exist. Replaced a file? `voices` notices;
 `--import` re-times everything.
 
 ### 7. Check
-- `stills` prints the timeline (each scene's start, length, voice) and
-  warnings (a word in `at` not found, missing media). Fix every warning.
+- `stills` prints the timeline (each scene's start, length, voice), NOTES and
+  PROBLEMS (a word in `at` not found, missing media, text too long, text in the
+  platform's zones). Fix every problem in `story.json` in one edit, then run it
+  again until none is left; fix the notes too by choosing better colours.
 - If you can look at images, open `build/contact-sheet.jpg` and check: text
   colliding or leaving the frame, stickers or confetti over faces, an empty
   first frame (it becomes the thumbnail), key text outside the vertical safe
@@ -180,7 +206,9 @@ node $E/engine/make.mjs <project> all --fps 30
 node $E/engine/make.mjs <project> check
 ```
 Rendering takes a few minutes on a small machine: run it in the background
-when you can. `check` must show every voice line OK. Then
+when you can. The `audio` step prints how far each voice line stands above
+the music (it must be 12 dB or more, or the render stops). `check` must show
+every voice line OK. Then
 `ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json <project>/out/<title>.mp4`:
 planned duration and size, and an audio stream.
 
@@ -196,5 +224,8 @@ make claims (prices, numbers, promises), so the user can confirm them.
 | Warning `word "x" not found` | The `at` word is not in that scene's `voice.text` (spelling, or its phonetic version). |
 | A card or avatar is grey | Its media id is missing from `story.media`, or the path is wrong. |
 | A voice sounds wrong | Re-generate that one line, save over its file, run `voices` again. |
-| `check` says CHECK | The line is inaudible or different: lower `music.volume` (0.4), or re-generate the line. |
+| `check` says CHECK | The line is inaudible or different: lower `music.volume` (0.35), or re-generate the line. |
+| "voice buried under the music" | Lower `music.volume`, or remove hand-placed `sounds` under that line. |
+| A voice sounds foreign in French | It is not a French voice, or not on `eleven_multilingual_v2`: pick one from `docs/voices.md`. |
+| PROBLEM "only fits at …px" / "needs … lines" | Shorten the text or split the title into two lines. |
 | Video too long | Shorten the spoken lines; scenes follow their voices. |

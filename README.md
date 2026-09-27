@@ -24,6 +24,9 @@ MP4. Vertical for TikTok, Reels and Shorts, or 16:9 and square.
   (an ElevenLabs account connected through Composio, another TTS, a
   recording), drop the files in `voices/`, and the engine times every word
   with faster-whisper. [Checked voice ids](docs/voices.md) in English and French.
+- **Readable by construction.** Every text is checked for contrast (4.5:1),
+  size (40 px minimum) and the platform's safe zones before rendering; voices
+  are levelled and must stand 12 dB above the music, or the render stops.
 - **Agent-ready.** [`SKILL.md`](SKILL.md) is a step-by-step playbook for an AI
   agent, including how to review stills and verify audio by transcription,
   since agents cannot watch or listen.
@@ -94,7 +97,8 @@ delivery.
 | `pileup` | Notifications or tasks rain down and shake, words slam in on the voice, then it all blows away | The problem, the hook |
 | `title` | Big lines popping in letter by letter, a slow "breathe" word, confetti | Turns, statements, reveals |
 | `fan` | Media cards fan in like a hand of cards; the first grows into the next card | Introducing a cast or a range |
-| `card` | A media card flies in with a name sticker, caption and a speech bubble with a live speaking meter | Characters, products, features, testimonials |
+| `card` | A media card flies in with a name sticker, caption, a speech bubble with a live speaking meter, and an optional prompt panel | Characters, products, features, tips with a prompt |
+| `chat` | A chat window: messages appear, answers type out, an optional stamp slams on | Hooks, before/after demos |
 | `list` | Rows slide in on their words | Steps, tips, agendas |
 | `grid` | Round avatars pop in to a rising marimba run and do a wave | "All of them together" |
 | `logo` | The grid flies into the mark; name, tagline and URL pop in | Endings, calls to action |

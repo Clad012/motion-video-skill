@@ -13,7 +13,8 @@
  *   node engine/make.mjs <project> check          transcribes the final mix (faster-whisper), per line
  *   node engine/make.mjs gallery [folder]         every sound effect and music style as MP3s (docs/sounds)
  *
- * Options: --fps 30 (faster; default story.format.fps or 60), --import (re-time every voice file).
+ * Options: --fps 30 (faster; default story.format.fps or 60), --import (re-time every voice file),
+ *          --force (render even with problems left; never for a video you deliver).
  * Env: FFMPEG, PYTHON, CHROME_PATH, WHISPER_MODEL.
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -29,6 +30,7 @@ const args = process.argv.slice(2);
 const flag = (name) => { const i = args.indexOf(`--${name}`); if (i < 0) return null; const v = args[i + 1]; args.splice(i, v && !v.startsWith("--") ? 2 : 1); return v ?? true; };
 const fpsFlag = flag("fps");
 const reimport = flag("import");
+const forceRender = flag("force");
 const [projectArg, step = "all", ...rest] = args;
 if (projectArg === "doctor") {
   // Everything the engine needs, found or missing, with the fix for each.
@@ -154,7 +156,7 @@ async function withPage(fn) {
     page.on("pageerror", (e) => console.error("page error:", e.message));
     await page.goto(`file://${join(BUILD, "player.html")}?capture=1`);
     await page.waitForFunction(() => window.ready === true, null, { timeout: 60000 });
-    const info = await page.evaluate(() => ({ cues: window.cues, meta: window.meta, timeline: window.timeline, warnings: window.warnings }));
+    const info = await page.evaluate(() => ({ cues: window.cues, meta: window.meta, timeline: window.timeline, warnings: window.warnings, problems: window.problems }));
     writeFileSync(join(BUILD, "cues.json"), JSON.stringify(info.cues, null, 1));
     writeFileSync(join(BUILD, "meta.json"), JSON.stringify(info.meta, null, 1));
     return await fn(page, info);
@@ -164,7 +166,8 @@ function printTimeline(info) {
   console.log("\n  scene        type      start    len   voice");
   for (const s of info.timeline) console.log(`  ${s.key.padEnd(12)} ${s.type.padEnd(8)} ${s.start.toFixed(2).padStart(6)} ${s.len.toFixed(2).padStart(6)}   ${s.voice == null ? "-" : s.voice.toFixed(2) + "s"}`);
   console.log(`  total ${info.meta.duration.toFixed(2)}s\n`);
-  if (info.warnings.length) { console.log("  WARNINGS"); info.warnings.forEach((w) => console.log("  ! " + w)); console.log(); }
+  if (info.warnings.length) { console.log("  NOTES (fixed automatically, better fixed in story.json)"); info.warnings.forEach((w) => console.log("  · " + w)); console.log(); }
+  if (info.problems.length) { console.log("  PROBLEMS (fix every one in story.json; the video will not render until you do)"); info.problems.forEach((w) => console.log("  ✗ " + w)); console.log(); }
 }
 const shot = (page, path) => page.locator("#frame").screenshot({ path, type: "jpeg", quality: 92 });
 
@@ -191,6 +194,7 @@ async function frames() {
   mkdirSync(dir, { recursive: true });
   await withPage(async (page, info) => {
     printTimeline(info);
+    if (info.problems.length && !forceRender) throw new Error(`${info.problems.length} problem(s) above: fix them in story.json first (run stills to check)`);
     const n = Math.round(info.meta.duration * FPS);
     const t0 = Date.now();
     for (let f = 0; f < n; f++) {
@@ -206,6 +210,9 @@ async function frames() {
 function audio() {
   if (!existsSync(join(BUILD, "meta.json"))) throw new Error("run stills or frames first (they export the cues)");
   run(python(), [join(ENGINE, "sound.py"), PROJECT]);
+  const levels = join(BUILD, "voice-levels.json");
+  const low = existsSync(levels) ? JSON.parse(readFileSync(levels, "utf8")).filter((r) => r.voiceOverBackgroundDb < 12) : [];
+  if (low.length && !forceRender) throw new Error(`voice buried under the music in: ${low.map((r) => r.key).join(", ")}. Lower music.volume or remove sounds under those lines, then run audio again.`);
 }
 
 function encode() {

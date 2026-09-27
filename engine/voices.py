@@ -183,12 +183,34 @@ def update(project, story, reimport=False):
     print(f"voices.json: {len(fresh)} line(s)")
 
 
+NUMBERS = {
+    "0": ("zéro", "zero"), "1": ("un", "one"), "2": ("deux", "two"), "3": ("trois", "three"), "4": ("quatre", "four"),
+    "5": ("cinq", "five"), "6": ("six", "six"), "7": ("sept", "seven"), "8": ("huit", "eight"), "9": ("neuf", "nine"),
+    "10": ("dix", "ten"), "12": ("douze", "twelve"), "20": ("vingt", "twenty"), "30": ("trente", "thirty"), "100": ("cent", "hundred"),
+}
+WORD_FOR = {digit: words for digit, words in NUMBERS.items()}
+
+
 def norm_words(s):
-    return [w.lower().strip("'’-") for w in spoken_words(s)]
+    out = []
+    for w in spoken_words(s.replace("'", "' ").replace("’", "’ ")):
+        w = w.lower().strip("'’-")
+        if w in WORD_FOR:
+            w = WORD_FOR[w][0]
+        for fr, en in NUMBERS.values():
+            if w == en:
+                w = fr
+        if w:
+            out.append(w)
+    return out
 
 
 def similarity(a, b):
-    return difflib.SequenceMatcher(None, norm_words(a), norm_words(b)).ratio()
+    """Letter-level likeness of what was written and what was heard, ignoring spaces,
+    hyphens and punctuation, so "demande-lui" and "demande lui" match."""
+    la = "".join(norm_words(a)).replace("-", "").replace("'", "").replace("’", "")
+    lb = "".join(norm_words(b)).replace("-", "").replace("'", "").replace("’", "")
+    return difflib.SequenceMatcher(None, la, lb, autojunk=False).ratio()
 
 
 def need_whisper():
@@ -213,25 +235,33 @@ def check_lines(project, story):
 
 
 def check_mix(project, story, audio):
-    found = whisper_words(audio, story.get("language"))
-    if found is None:
-        need_whisper()
-    print("heard in the mix:")
-    line, start = [], None
-    for w in found:
-        start = w["start"] if start is None else start
-        line.append(w["w"])
-        if w["w"].endswith((".", "?", "!")):
-            print(f"  {start:6.2f}s  {' '.join(line)}")
-            line, start = [], None
-    if line:
-        print(f"  {start:6.2f}s  {' '.join(line)}")
-    heard = " ".join(w["w"] for w in found).split()
-    print("expected lines:")
-    for scene_key, voice in scene_lines(story):
-        n = len(spoken_words(voice["text"]))
-        best = max((similarity(voice["text"], " ".join(heard[i : i + n])) for i in range(max(1, len(heard)))), default=0)
-        print(f"  {'OK   ' if best >= 0.8 else 'CHECK'} {scene_key}  {best:.2f}  {voice['text']}")
+    """Transcribes each voice line where it sits in the final mix, one window at a time:
+    a whole-mix transcription silently drops segments, a window per line does not."""
+    build = os.path.join(project, "build")
+    cues = json.load(open(os.path.join(build, "cues.json")))
+    index = json.load(open(os.path.join(project, "voices", "voices.json"), encoding="utf8"))
+    levels_path = os.path.join(build, "voice-levels.json")
+    levels = {r["key"]: r["voiceOverBackgroundDb"] for r in json.load(open(levels_path))} if os.path.exists(levels_path) else {}
+    bad = 0
+    for c in (c for c in cues if c["kind"] == "voice"):
+        line = index.get(c["key"], {})
+        start = c["t"] + line.get("speechStart", 0) - 0.5
+        clip = os.path.join(build, f"check-{c['key']}.wav")
+        subprocess.run([ffmpeg_path(), "-loglevel", "error", "-y", "-ss", f"{max(0, start):.2f}", "-to", f"{c['end'] + 0.35:.2f}", "-i", audio, "-ac", "1", "-ar", "16000", clip], check=True)
+        words = whisper_words(clip, story.get("language"))
+        if words is None:
+            need_whisper()
+        heard = " ".join(w["w"] for w in words)
+        score = similarity(line.get("text", ""), heard)
+        level = levels.get(c["key"])
+        ok = score >= 0.85 and (level is None or level >= 12)
+        bad += not ok
+        lv = f"{level:4.0f} dB" if level is not None else "   ? dB"
+        print(f"  {'OK   ' if ok else 'CHECK'} {c['key']:12} words {score:.2f}  voice over music {lv}  {c['t'] + line.get('speechStart', 0):6.2f}s")
+        if not ok:
+            print(f"        wrote: {line.get('text')}\n        heard: {heard}")
+        os.remove(clip)
+    print(f"{bad} line(s) to check" if bad else "every line is heard, and stands above the music")
 
 
 def main():

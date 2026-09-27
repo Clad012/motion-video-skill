@@ -36,8 +36,32 @@ my-video/
 | `autoSfx` | boolean | `true` | `false` keeps only the sounds scenes place by hand (see `sounds`). |
 | `voices` | `{who: voiceId}` | | Notes for you: the voice id each speaker uses in your text-to-speech tool, so every take matches. The engine does not read it. |
 | `media` | `{id: path}` or `{id: {full, avatar}}` | | Videos (mp4/mov/webm/gif), images (png/jpg/webp) or folders of frames. `full` is used on cards, `avatar` (square) in grids; each falls back to the other. |
-| `labels` | `{now, number}` | `{now: "now", number: "No."}` | Small UI words, for other languages. |
+| `labels` | `{now, number, prompt, assistant}` | `{now: "now", number: "No.", prompt: "PROMPT", assistant: "AI assistant"}` | Small UI words, for other languages (e.g. `{"now": "maintenant", "number": "N°", "assistant": "Assistant IA"}`). |
 | `scenes` | array | | The video, in order. |
+
+## Readability (enforced)
+
+The engine checks every text it draws, over the whole video, before it renders:
+
+- **Contrast:** every text reaches 4.5:1 against what it sits on. A colour too
+  light to read as text (yellow, pastels) becomes a highlighter band behind
+  dark text; a fill too light for white text gets dark text, or a darker fill.
+  Each fix is listed as a NOTE by `stills`: better to pick colours that need
+  none. Ink on paper must reach 7:1.
+- **Size:** no text below 40 px at 1080 wide. Bubbles, captions, list items,
+  prompts and messages wrap onto more lines rather than shrink. A title line
+  shrinking below 72 px is a PROBLEM: split it into two lines.
+- **Safe zones** (vertical formats): text reaching into the top 6.5% or the
+  bottom 14% of the frame is a PROBLEM. That's where TikTok, Reels and Shorts
+  draw their buttons and caption.
+- **Voices:** every line is brought to the same speech loudness; under speech
+  the music drops to a fifth and the effects to a third, then further under
+  any line that still doesn't stand 15 dB above them. The `audio` step prints
+  each line's level and stops when one is under 12 dB (a safety net).
+
+PROBLEMS stop `frames` and `all` until they are fixed (`--force` overrides,
+never for a video you deliver). The first scene shows at frame 0 what it would
+show in its first 0.8 s, because frame 0 is the thumbnail.
 
 ## Every scene
 
@@ -121,11 +145,27 @@ A big media card flies in from alternating sides and lands with a squish.
 | `color` | Sticker, progress and bubble accent. |
 | `name` | Sticker over the bottom edge. |
 | `caption` | One line under the card. |
-| `bubble` | Speech bubble above the card; pops when the voice starts, with a live "speaking" meter. Keep it shorter than the spoken line. |
+| `bubble` | Speech bubble above the card; pops when the voice starts, with a live "speaking" meter. Keep it shorter than the spoken line (8 words at most). |
+| `prompt` | Text to copy (a prompt, a command, a formula): a panel under the card that types out within 1.2 s of the voice, then stays readable. The card gets smaller to make room. 30 words at most. |
 | `number` | `false` hides the "No. 01" badge, or a string replaces it. |
 | `progress` | `false` hides the dots shown across a run of consecutive cards. |
 
 The card squashes slightly on every spoken word.
+
+### `chat`: a chat window
+A chat window whose messages appear one by one: the user's in the accent colour
+on the right, the answers typed out on the left. An optional stamp slams
+under the last answer. Title lines (same as `title`) above. Good for "you use it
+like this… (bad answer)" hooks and before/after demos.
+
+```json
+{ "type": "chat", "name": "Assistant IA",
+  "lines": [ { "text": "Tu utilises l'IA", "at": "Tu" }, { "text": "comme Google ?", "at": "comme", "color": "brand" } ],
+  "messages": [ { "from": "user", "text": "fais-moi un planning", "at": 0.5 },
+                { "from": "ai", "text": "Voici un planning type : 1. Se réveiller…", "at": 1.2 } ],
+  "stamp": { "text": "BOF.", "at": "passes", "color": "rose" } }
+```
+`name` is the window title (default `labels.assistant`). 2 to 4 short messages.
 
 ### `list`: steps, tips, agenda
 A title and rows that slide in from alternating sides at their `at`.

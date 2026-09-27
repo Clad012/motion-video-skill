@@ -99,9 +99,9 @@ def build(project):
         if kind == "voice":
             line = voices.get(c["key"], {})
             if line.get("file") and os.path.exists(os.path.join(project, line["file"])):
-                v = load_audio(os.path.join(project, line["file"]))
-                place(voice, v / (np.max(np.abs(v)) + 1e-9) * 0.9, at, 1.0)
-                speech.append((at + line["speechStart"], c["end"]))
+                v = level_voice(load_audio(os.path.join(project, line["file"])))
+                place(voice, v, at, 1.0)
+                speech.append((at + line["speechStart"], c["end"], c["key"]))
             continue
         if kind == "file" or c.get("file"):
             place(effects, load_audio(os.path.join(project, c["file"])), at, g, 0)
@@ -118,15 +118,74 @@ def build(project):
         sig = sfx_lib.render(kind, np.random.default_rng(idx), key=key, **params)
         place(effects, sig, at, base * g, 0 if kind in ("thud", "tada", "slam", "impact", "drop", "crash") else pan)
 
-    # Duck the music (and a little of the effects) while anyone speaks.
+    # Duck the music to a fifth (-14 dB), and the effects to a third, while anyone speaks.
     tt = np.arange(n) / SR
     duck = np.ones(n)
-    for s, e in speech:
-        duck = np.minimum(duck, 1 - 0.6 * np.minimum(np.clip((tt - (s - 0.12)) / 0.12, 0, 1), np.clip(((e + 0.2) - tt) / 0.2, 0, 1)))
-    mix = bed * m.get("volume", 0.55) * duck[:, None] + effects * (0.55 + 0.45 * duck)[:, None] + voice
+    for s, e, _ in speech:
+        duck = np.minimum(duck, 1 - DUCK * np.minimum(np.clip((tt - (s - 0.12)) / 0.12, 0, 1), np.clip(((e + 0.2) - tt) / 0.2, 0, 1)))
+    background = bed * m.get("volume", 0.45) * duck[:, None] + effects * (0.35 + 0.65 * duck)[:, None]
+    background = clear_room(background, voice, speech, tt)
+    mix = background + voice
     write_wav(os.path.join(build_dir, "soundtrack.wav"), finish(mix))
     style = f"file {m['file']}" if m.get("file") else f"style {m.get('style', 'playful')}"
     print(f"› soundtrack.wav  {meta['duration']:.2f}s  {style}  {len(speech)} voice line(s)  {len(cues)} cues")
+    report_levels(build_dir, speech, voice, background)
+
+
+# Every line is brought to the same speech loudness, so no line sits lower than the others.
+SPEECH_RMS = 10 ** (-18 / 20)
+DUCK = 0.8
+MIN_VOICE_OVER_BACKGROUND_DB = 12.0
+
+
+TARGET_VOICE_OVER_BACKGROUND_DB = 15.0
+
+
+def clear_room(background, voice, speech, tt):
+    """Lowers the music and effects under any line that doesn't stand TARGET dB above them,
+    just enough, with short ramps: the voice is always the loudest thing when someone speaks."""
+    gain = np.ones(len(tt))
+    for s, e, _ in speech:
+        a, b = int(max(0, s) * SR), int(max(s + 0.1, e) * SR)
+        vr = float(np.sqrt(np.mean(voice[a:b] ** 2)) + 1e-9)
+        br = float(np.sqrt(np.mean(background[a:b] ** 2)) + 1e-9)
+        ratio = 20 * np.log10(vr / br)
+        if ratio >= TARGET_VOICE_OVER_BACKGROUND_DB:
+            continue
+        g = max(0.1, 10 ** ((ratio - TARGET_VOICE_OVER_BACKGROUND_DB) / 20))
+        ramp = np.clip(np.minimum((tt - (s - 0.25)) / 0.2, ((e + 0.35) - tt) / 0.25), 0, 1)
+        gain = np.minimum(gain, 1 - (1 - g) * ramp)
+    return background * gain[:, None]
+
+
+def level_voice(v):
+    """Scales a voice file so its speech (not its silences) sits at SPEECH_RMS."""
+    frame = int(SR * 0.05)
+    usable = len(v) // frame * frame
+    if usable == 0:
+        return v
+    rms = np.sqrt(np.mean(v[:usable].reshape(-1, frame) ** 2, axis=1))
+    loud = rms[rms > np.max(rms) * 0.1]
+    speech_rms = float(np.sqrt(np.mean(loud ** 2))) if len(loud) else float(np.max(rms))
+    return v * (SPEECH_RMS / max(speech_rms, 1e-6))
+
+
+def report_levels(build_dir, speech, voice, background):
+    """How far each line stands above the music and effects under it, in dB."""
+    rows, low = [], []
+    for s, e, key in speech:
+        a, b = int(max(0, s) * SR), int(max(s + 0.1, e) * SR)
+        vr = float(np.sqrt(np.mean(voice[a:b] ** 2)) + 1e-9)
+        br = float(np.sqrt(np.mean(background[a:b] ** 2)) + 1e-9)
+        ratio = 20 * np.log10(vr / br)
+        rows.append({"key": key, "start": round(s, 2), "voiceOverBackgroundDb": round(ratio, 1)})
+        if ratio < MIN_VOICE_OVER_BACKGROUND_DB:
+            low.append((key, ratio))
+    json.dump(rows, open(os.path.join(build_dir, "voice-levels.json"), "w"), indent=1)
+    if rows:
+        print("  voice over music+effects, per line: " + ", ".join(f"{r['key']} {r['voiceOverBackgroundDb']:.0f} dB" for r in rows))
+    for key, ratio in low:
+        print(f"! {key}: the voice is only {ratio:.1f} dB above the music and effects (needs {MIN_VOICE_OVER_BACKGROUND_DB:.0f}): lower music.volume or remove sounds under this line")
 
 
 def gallery(folder):
