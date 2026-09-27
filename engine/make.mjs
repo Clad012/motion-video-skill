@@ -163,8 +163,8 @@ async function withPage(fn) {
   } finally { await browser.close(); }
 }
 function printTimeline(info) {
-  console.log("\n  scene        type      start    len   voice");
-  for (const s of info.timeline) console.log(`  ${s.key.padEnd(12)} ${s.type.padEnd(8)} ${s.start.toFixed(2).padStart(6)} ${s.len.toFixed(2).padStart(6)}   ${s.voice == null ? "-" : s.voice.toFixed(2) + "s"}`);
+  console.log("\n  scene        type        start    len   voice");
+  for (const s of info.timeline) console.log(`  ${s.key.padEnd(12)} ${s.type.padEnd(10)} ${s.start.toFixed(2).padStart(6)} ${s.len.toFixed(2).padStart(6)}   ${s.voice == null ? "-" : s.voice.toFixed(2) + "s"}`);
   console.log(`  total ${info.meta.duration.toFixed(2)}s\n`);
   if (info.warnings.length) { console.log("  NOTES (fixed automatically, better fixed in story.json)"); info.warnings.forEach((w) => console.log("  · " + w)); console.log(); }
   if (info.problems.length) { console.log("  PROBLEMS (fix every one in story.json; the video will not render until you do)"); info.problems.forEach((w) => console.log("  ✗ " + w)); console.log(); }

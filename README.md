@@ -52,13 +52,14 @@ No browser at all? Set `CHROME_PATH` to one, or `npx playwright install chromium
 For voices you bring yourself, `pip install faster-whisper` gives precise word
 timings and lets `check` verify the mix.
 
-Three examples, all built from UI cards (no media to prepare):
+Four examples, all built from drawn UI cards (no media to prepare):
 
 | Example | Format | Shows |
 |---|---|---|
 | [`app-launch`](examples/app-launch/story.json) | 9:16, English voice | Notification pile-up, title reveal, checklist ticked off, feature cards, stats counting up, logo |
 | [`astuces-ia`](examples/astuces-ia/story.json) | 9:16, French voice | Chat hook with a stamp, three prompt cards, before/after comparison, call to action |
 | [`feature-launch`](examples/feature-launch/story.json) | 16:9, no voice | Title, before/after, feature card grid, stats, logo |
+| [`coffee-explainer`](examples/coffee-explainer/story.json) | 9:16, English voice | An explainer on any topic: quiz hook, profile, timeline, bar chart, myth/fact flip, definition, donut, ranking, quote |
 
 The voiced examples ship with their voice files, so they render as they are.
 
@@ -107,6 +108,14 @@ delivery.
 | `checklist` | A to-do card whose items tick off as they are said, with a live progress count | Routines, steps done for you |
 | `compare` | A "before" card, then an "after" card that wins | Before/after, with/without |
 | `prompt` | A tip card: number, title, and a prompt that types out | Tips, commands, recipes |
+| `quiz` | A question, options one by one, a countdown, then the answer lights up | Hooks, trivia, "did you know" |
+| `timeline` | Dates or steps on a line that draws itself | History, a process, a day, a roadmap |
+| `chart` | Bar, line or donut chart that builds itself, values counting up | Data, shares, trends |
+| `ranking` | A top list revealed from the bottom up, number one in the spotlight | Top 3/5, winners, comparisons |
+| `flip` | A card that flips from one side to the other | Myth vs fact, question and answer |
+| `definition` | A dictionary card: word, how to say it, meaning, example | A term, an acronym, a rule |
+| `profile` | Avatar, name, role and facts one by one | A person, a place, an animal, a product |
+| `quote` | A quote that appears as it is said, key words highlighted, author | Quotes, proverbs, testimonials |
 | `card` | A media card flies in with a name sticker, caption, a speech bubble with a live speaking meter, and an optional prompt panel | Characters, products, features, tips with a prompt |
 | `chat` | A chat window: messages appear, answers type out, an optional stamp slams on | Hooks, before/after demos |
 | `list` | Rows slide in on their words | Steps, tips, agendas |
@@ -149,7 +158,7 @@ story.json ─┬─ voices.py ──► word timings for voices/*.mp3 (faster-w
 
 ## Example credits
 
-- Example voices: Sarah (English) and Julia (French), ElevenLabs voices, on
+- Example voices: Sarah and Alice (English) and Julia (French), ElevenLabs voices, on
   `eleven_multilingual_v2`.
 - Font: [Geist](https://fonts.google.com/specimen/Geist) (SIL Open Font License), loaded from Google Fonts.
 - "Daybreak" and "Brightbook" are made-up names; `example.com` is a reserved example domain.

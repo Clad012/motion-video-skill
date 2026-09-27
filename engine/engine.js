@@ -40,7 +40,7 @@
   const FONT = `"${style.font ?? "Geist"}", system-ui, sans-serif`;
   const STYLE_BPM = { playful: 100, lofi: 80, upbeat: 118, cinematic: 90, chiptune: 128, tropical: 102, corporate: 110, ambient: 72 };
   const BEAT = 60 / (S.music?.bpm ?? STYLE_BPM[S.music?.style] ?? 100);
-  const labels = { now: "now", number: "No.", prompt: "PROMPT", assistant: "AI assistant", ...(S.labels ?? {}) };
+  const labels = { now: "now", number: "No.", prompt: "PROMPT", assistant: "AI assistant", quiz: "Quiz", myth: "Myth", fact: "Fact", ...(S.labels ?? {}) };
 
   /* ---------------------------------------------------------------- maths */
   const TAU = Math.PI * 2;
@@ -211,7 +211,7 @@
   }
 
   /* ---------------------------------------------------------------- timeline */
-  const DEFAULT_LEN = { pileup: 3, title: 2.4, fan: 3, card: 2.4, chat: 4.2, cards: 4.2, stats: 3.6, checklist: 4.2, compare: 4.2, prompt: 4.2, list: 3.6, grid: 4.2, logo: 3.6 };
+  const DEFAULT_LEN = { pileup: 3, title: 2.4, fan: 3, card: 2.4, chat: 4.2, cards: 4.2, stats: 3.6, checklist: 4.2, compare: 4.2, prompt: 4.2, quote: 4.2, timeline: 4.8, chart: 4.2, quiz: 5.4, ranking: 4.8, flip: 4.2, definition: 4.2, profile: 4.2, list: 3.6, grid: 4.2, logo: 3.6 };
   const DEFAULT_VOICE_AT = { card: 0.45, logo: 0.75 };
   const scenes = S.scenes.map((raw, index) => ({ ...raw, index, key: raw.id ?? `s${index + 1}` }));
   let cursor = 0;
@@ -710,6 +710,44 @@
     search: "M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13M15.5 15.5l5 5",
     up: "M12 19.5v-15M6 10.5l6-6l6 6",
     rocket: "M12 3c3 2 4.5 5.5 4.5 9.5l-2.5 3h-4l-2.5-3C7.5 8.5 9 5 12 3zM9.5 15.5l-3 3.5M14.5 15.5l3 3.5M12 9a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3",
+    down: "M12 4.5v15M6 13.5l6 6l6-6",
+    globe: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5M12 3.5c-2.5 2.5-3.5 5.5-3.5 8.5s1 6 3.5 8.5",
+    book: "M4 5.5c2.5-1 5.5-1 8 1v13c-2.5-2-5.5-2-8-1zM20 5.5c-2.5-1-5.5-1-8 1v13c2.5-2 5.5-2 8-1z",
+    school: "M2.5 9.5L12 5l9.5 4.5L12 14zM6.5 11.5v4.5c3 2.5 8 2.5 11 0v-4.5M21.5 9.5v5",
+    idea: "M9 17.5h6M10 20.5h4M12 3.5a6 6 0 0 0-3.5 10.9c.4.3.5.7.5 1.1v2h5v-2c0-.4.1-.8.5-1.1A6 6 0 0 0 12 3.5z",
+    question: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 16.8v.2",
+    info: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M12 11v5.5M12 7.8v.2",
+    warning: "M12 4l9 16H3zM12 10v4.5M12 17.3v.2",
+    eye: "M2.5 12s3.5-6.5 9.5-6.5s9.5 6.5 9.5 6.5s-3.5 6.5-9.5 6.5S2.5 12 2.5 12zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6",
+    leaf: "M5 19c0-8 5-13.5 14.5-14.5C19 14 13.5 19 5 19zM5 19l8-8",
+    sun: "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4",
+    moon: "M19.5 14.5A8 8 0 1 1 9.5 4.5a6.5 6.5 0 0 0 10 10z",
+    cloud: "M7 18.5a4 4 0 0 1-.5-8a5.5 5.5 0 0 1 10.5-1.5a4.5 4.5 0 0 1 .5 9.5z",
+    drop: "M12 3.5c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-10z",
+    fire: "M12 20.5a6 6 0 0 1-6-6c0-4 3-6 3.5-10c2.5 1.5 3.5 4 3.5 6c1-.5 1.5-1.5 1.5-2.5c2 1.5 3.5 4 3.5 6.5a6 6 0 0 1-6 6z",
+    money: "M3.5 6.5h17v11h-17zM12 9.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5M6.5 9.5v5M17.5 9.5v5",
+    cart: "M3 4h2.5l2.5 11h10l2-8H6.5M9 18a1.3 1.3 0 1 0 0 2.6a1.3 1.3 0 1 0 0-2.6M17 18a1.3 1.3 0 1 0 0 2.6a1.3 1.3 0 1 0 0-2.6",
+    gift: "M4 9.5h16v4H4zM5.5 13.5v7h13v-7M12 9.5v11M12 9.5c-1-3-5-4-5-1.5c0 1.5 3 1.5 5 1.5c2 0 5 0 5-1.5c0-2.5-4-1.5-5 1.5",
+    trophy: "M7.5 4h9v5a4.5 4.5 0 0 1-9 0zM7.5 6H4.5c0 3 1.5 4.5 3.5 4.5M16.5 6h3c0 3-1.5 4.5-3.5 4.5M12 13.5v3.5M8.5 20.5h7M9.5 20.5l.5-3.5h4l.5 3.5",
+    flag: "M5.5 21V4M5.5 4.5h12l-2.5 4l2.5 4h-12",
+    pin: "M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11zM12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5",
+    home: "M4 11l8-6.5l8 6.5M6 9.5v10h12v-10M10 19.5v-5h4v5",
+    car: "M4 16.5v-4l2-5h12l2 5v4zM4 12.5h16M7 16.5v2M17 16.5v2",
+    plane: "M12 3.5c1 0 1.5 1 1.5 2v4.5l7 4v2l-7-2v4l2 1.5v1.5l-3.5-1l-3.5 1v-1.5l2-1.5v-4l-7 2v-2l7-4V5.5c0-1 .5-2 1.5-2z",
+    food: "M7 3.5v17M5 3.5v5a2 2 0 0 0 4 0v-5M16.5 20.5v-17c-2 1-3 3.5-3 6.5v3h3",
+    cup: "M4.5 8.5h12v5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5zM16.5 10h1.5a2.5 2.5 0 0 1 0 5h-2M8 3.5v2M11 3.5v2M14 3.5v2",
+    music: "M9 17.5V5.5l10-2v12M9 17.5a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0M19 15.5a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0",
+    camera: "M3.5 8h4l1.5-2.5h6L16.5 8h4v11h-17zM12 10.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7",
+    play: "M8 5.5v13l10.5-6.5z",
+    phone: "M7.5 3.5h9v17h-9zM11 17.5h2",
+    code: "M8.5 7.5L4 12l4.5 4.5M15.5 7.5L20 12l-4.5 4.5M13.5 5l-3 14",
+    settings: "M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1",
+    pencil: "M4.5 19.5l1-4.5L16 4.5l3.5 3.5L9 18.5zM13.5 7l3.5 3.5",
+    file: "M6 3.5h8l4 4v13H6zM14 3.5v4h4M9 12.5h6M9 16h6",
+    link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
+    shield: "M12 3.5l7.5 3v5c0 4.5-3 8-7.5 9.5c-4.5-1.5-7.5-5-7.5-9.5v-5z",
+    fitness: "M6.5 8v8M17.5 8v8M4 10v4M20 10v4M6.5 12h11",
+    hourglass: "M6.5 3.5h11M6.5 20.5h11M7.5 3.5c0 5 9 5 9 8.5s-9 3.5-9 8.5M16.5 3.5c0 5-9 5-9 8.5s9 3.5 9 8.5",
   };
   /** An icon tile: rounded square in `color`, icon (or a short glyph) in its readable colour. */
   function iconTile(icon, x, y, size, color, what) {
@@ -1032,6 +1070,674 @@
     },
   };
 
+  /* ---------------------------------------------------------------- more UI cards, for any topic */
+  /** The room under a scene's heading lines. */
+  function bodyArea(sc) {
+    const head = (sc.lines ?? []).length > 0;
+    return { top: head ? (PORTRAIT ? H * 0.27 : H * 0.3) : PORTRAIT ? H * 0.12 : H * 0.1, bottom: PORTRAIT ? H * 0.83 : H * 0.9 };
+  }
+  const HEAD = () => ({ center: PORTRAIT ? H * 0.16 : H * 0.15 });
+  const sceneOut = (sc, t) => inBack(prog(t, sc.end - 0.24, sc.end));
+  const wideCard = () => Math.min(W * 0.88, (PORTRAIT ? 960 : 1500) * U);
+  /** Opens a group carrying a card's enter and exit motion. */
+  const cardGroup = (en, out, x, y, rot = true) => `<g opacity="${(en.op * (1 - out)).toFixed(3)}" transform="translate(0 ${f1(en.dy + out * H * 0.5)})${rot ? ` rotate(${en.rot.toFixed(2)} ${f1(x)} ${f1(y)})` : ""}">`;
+  /** Top of a block of height h centred in the room; a problem when it does not fit. */
+  function place(sc, h, what, area = bodyArea(sc)) {
+    if (h > area.bottom - area.top + 1) problem(`scene ${sc.key}: ${what} is too tall for the frame; shorten its text or use fewer items.`);
+    const y0 = Math.max(area.top, (area.top + area.bottom) / 2 - h / 2);
+    safe(sc, y0, y0 + h, what);
+    return y0;
+  }
+  /** When each word is said: from the voice when it reads these words, else at a steady pace from t0 over dur. */
+  function wordTimes(sc, words, t0, dur) {
+    const n = words.length, at = new Array(n).fill(null);
+    if (sc.v) {
+      const vw = sc.v.words;
+      let j = 0;
+      words.forEach((w, i) => {
+        const nw = norm(w);
+        if (!nw) return;
+        // The first word may come after an introduction ("As the proverb says: …"); later words follow closely.
+          for (let k = j; k < Math.min(vw.length, at.some((v) => v != null) ? j + 4 : vw.length); k++) {
+          if (norm(vw[k].w) === nw) { at[i] = sc.start + sc.voiceAt + vw[k].start - sc.v.speechStart; j = k + 1; break; }
+        }
+      });
+    }
+    const known = at.map((v, i) => (v == null ? null : i)).filter((i) => i != null);
+    return at.map((v, i) => {
+      let r = v;
+      if (r == null) {
+        const a = [...known].reverse().find((k) => k < i), b = known.find((k) => k > i);
+        if (a != null && b != null) r = lerp(at[a], at[b], (i - a) / (b - a));
+        else if (a != null) r = at[a] + (i - a) * 0.22;
+        else if (b != null) r = at[b] - (b - i) * 0.22;
+        else r = t0 + (dur * i) / Math.max(1, n);
+      }
+      return Math.max(t0, r);
+    });
+  }
+  /** Lines revealed word by word at `times`; words starting like one in `hl` get a highlighter band. */
+  function wordsBlock(lines, x, yFirst, size, weight, fill, t, times, { lh = 1.22, hl = [], band = null } = {}) {
+    let s = "", k = 0;
+    const space = measure(" ", weight, size);
+    lines.forEach((line, li) => {
+      const y = yFirst + li * size * lh;
+      let cx = x;
+      for (const w of line.split(" ")) {
+        const ww = measure(w, weight, size), tw = times[k] ?? 0;
+        const p = prog(t, tw, tw + 0.22);
+        if (p > 0) {
+          if (band && hl.some((h) => norm(h) && norm(w).startsWith(norm(h)))) s += marker(cx, ww, y, size, band, outCubic(prog(t, tw + 0.08, tw + 0.4)), 0);
+          s += `<text x="${f1(cx)}" y="${f1(y + (1 - outCubic(p)) * 18 * U)}" font-family='${FONT}' font-weight="${weight}" font-size="${f1(size)}" fill="${fill}" opacity="${clamp(p * 1.5).toFixed(3)}">${esc(w)}</text>`;
+        }
+        cx += ww + space;
+        k++;
+      }
+    });
+    return s;
+  }
+  const splitWords = (s) => String(s ?? "").split(/\s+/).filter(Boolean);
+  const initialsOf = (name) => splitWords(name).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const fmtOf = (sc) => (v, it) => formatNumber(v, { prefix: sc.prefix, suffix: sc.suffix, decimals: sc.decimals, ...it });
+  /** Colours for data: the item's own, the accent (dimmed when another item is highlighted), or the palette in turn. */
+  function dataColors(sc, items, cycle) {
+    const c = col(sc.color ?? style.accent);
+    const hl = items.some((it) => it.highlight);
+    const pal = [c, ...Object.keys(PALETTE).map((k) => col(k)).filter((v) => v !== c)];
+    return items.map((it, k) => (it.color ? col(it.color) : cycle ? pal[k % pal.length] : hl && !it.highlight ? mix(c, "#ffffff", 0.55) : c));
+  }
+
+  /* ---- quote: a quote card; words appear as they are said, key words get a highlighter. */
+  function quoteTiming(sc) {
+    const words = splitWords(sc.text);
+    const t0 = early(sc, when(sc, sc.at, 0.2));
+    const r0 = Math.max(t0 + 0.2, sc.textAt != null ? when(sc, sc.textAt) : sc.v ? sc.start + sc.voiceAt : t0 + 0.35);
+    const dur = sc.v ? Math.max(0.6, sc.start + sc.voiceAt + sc.speech - r0) : Math.min(2.4, words.length * 0.12);
+    const times = wordTimes(sc, words, r0, dur);
+    return { t0, words, times, done: Math.max(t0 + 0.4, ...times) };
+  }
+  SCENES.quote = {
+    render(sc, t) {
+      titleLines(sc, t, HEAD());
+      const out = sceneOut(sc, t), c = col(sc.color ?? style.accent);
+      const cw = wideCard(), pad = 56 * U, left = CX - cw / 2 + pad;
+      const qs = wrap(sc.text ?? "", 700, (PORTRAIT ? 74 : 68) * U, MIN_TEXT * U, cw - pad * 2, PORTRAIT ? 8 : 5, `scene ${sc.key}: quote`);
+      const markSize = 200 * U, markH = 96 * U, lh = 1.24, d = 100 * U;
+      const authorH = sc.author ? 30 * U + d + 30 * U : 0;
+      const ch = pad + markH + (qs.lines.length - 1) * qs.size * lh + qs.size * 1.1 + authorH + pad * 0.7;
+      const y0 = place(sc, ch, "the quote card"), y = y0 + ch / 2;
+      const { t0, times, done } = quoteTiming(sc);
+      const en = enter(t, t0);
+      if (en.p <= 0) return;
+      let g = cardGroup(en, out, CX, y) + uiCard(CX, y, cw, ch);
+      g += `<text x="${f1(left - 8 * U)}" y="${f1(y0 + pad + markSize * 0.72)}" font-family='${FONT}' font-weight="900" font-size="${f1(markSize)}" fill="${readable(c, "#ffffff", `scene ${sc.key}: quote mark`)}">“</text>`;
+      const ty = y0 + pad + markH + qs.size * 0.85;
+      g += wordsBlock(qs.lines, left, ty, qs.size, 700, INK, t, times, { lh, hl: sc.highlight ?? [], band: mix(c, "#ffffff", 0.6) });
+      if (sc.author) {
+        const at = when(sc, sc.authorAt, done - sc.start + 0.2);
+        const ap = prog(t, at, at + 0.35);
+        const yA = ty + (qs.lines.length - 1) * qs.size * lh + qs.size * 0.25 + 30 * U, cy = yA + 30 * U + d / 2;
+        const room = cw - pad * 2 - d - 30 * U, nx = left + d + 30 * U;
+        const nm = wrap(sc.author, 800, 50 * U, MIN_TEXT * U, room, 1, `scene ${sc.key}: author`);
+        const rl = sc.role ? wrap(sc.role, 500, 40 * U, MIN_TEXT * U, room, 1, `scene ${sc.key}: author role`) : null;
+        if (ap > 0) {
+          const o = onFill(c, `scene ${sc.key}: author initials`);
+          g += `<g opacity="${clamp(ap * 2).toFixed(3)}" transform="translate(${f1((1 - outCubic(ap)) * 40 * U)} 0)">`;
+          g += `<rect x="${f1(left)}" y="${f1(yA)}" width="${f1(cw - pad * 2)}" height="${f1(2 * U)}" fill="${INK}" opacity=".1"/>`;
+          g += `<circle cx="${f1(left + d / 2)}" cy="${f1(cy)}" r="${f1(d / 2)}" fill="${o.fill}"/>`;
+          g += `<text x="${f1(left + d / 2)}" y="${f1(cy + d * 0.14)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(d * 0.4)}" fill="${o.text}">${esc(sc.initials ?? initialsOf(sc.author))}</text>`;
+          const ny = rl ? cy - 6 * U : cy + nm.size * 0.35;
+          g += textBlock(nm.lines, nx, ny, nm.size, 800, INK, { anchor: "start" });
+          if (rl) g += textBlock(rl.lines, nx, ny + rl.size * 1.25, rl.size, 500, MUTED, { anchor: "start" });
+          g += "</g>";
+        }
+      }
+      front += g + "</g>";
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      const { t0, words, times, done } = quoteTiming(sc);
+      add(t0 - 0.05, "swoosh", { gain: 0.45 });
+      const hl = sc.highlight ?? [];
+      words.forEach((w, k) => { if (hl.some((h) => norm(h) && norm(w).startsWith(norm(h)))) add(times[k] + 0.1, "blip", { pitch: 1.2, gain: 0.35 }); });
+      if (sc.author) add(when(sc, sc.authorAt, done - sc.start + 0.2), "pop", { pitch: 1.1, gain: 0.45 });
+    },
+  };
+
+  /* ---- timeline: dates or steps on a line that draws itself; each stop lights up on its word. */
+  const stopTimes = (sc) => (sc.items ?? []).map((it, k) => early(sc, when(sc, it.at, 0.45 + k * 0.7)));
+  SCENES.timeline = {
+    render(sc, t) {
+      titleLines(sc, t, HEAD());
+      const out = sceneOut(sc, t);
+      const items = sc.items ?? [], n = items.length;
+      if (!n) return;
+      const cw = wideCard(), pad = 48 * U, cl = CX - cw / 2;
+      const times = stopTimes(sc);
+      const colors = items.map((it) => col(it.color ?? sc.color ?? style.accent));
+      const vertical = PORTRAIT || sc.vertical;
+      const rows = [], nodes = [];
+      let ch;
+      if (vertical) {
+        const railX = cl + pad + 26 * U, tx = railX + 62 * U, room = cl + cw - pad - tx, gap = 44 * U;
+        items.forEach((it, k) => {
+          const lb = wrap(it.label ?? "", 800, 42 * U, MIN_TEXT * U, room, 1, `scene ${sc.key}: stop ${k + 1} label`);
+          const ti = it.title ? wrap(it.title, 800, 54 * U, MIN_TEXT * U, room, 2, `scene ${sc.key}: stop ${k + 1} title`) : null;
+          const tb = it.text ? wrap(it.text, 500, 40 * U, MIN_TEXT * U, room, 2, `scene ${sc.key}: stop ${k + 1} text`) : null;
+          rows.push({ lb, ti, tb, x: tx, anchor: "start", h: lb.size + (ti ? 16 * U + ti.lines.length * ti.size * 1.15 : 0) + (tb ? 12 * U + tb.lines.length * tb.size * 1.2 : 0) });
+        });
+        ch = pad * 2 + rows.reduce((a, r) => a + r.h, 0) + gap * (n - 1);
+        const y0 = place(sc, ch, "the timeline");
+        let yy = y0 + pad;
+        rows.forEach((r) => { r.top = yy; nodes.push({ x: railX, y: yy + r.lb.size * 0.42 }); yy += r.h + gap; });
+      } else {
+        const colW = (cw - pad * 2) / n, room = colW - 28 * U;
+        items.forEach((it, k) => {
+          const lb = wrap(it.label ?? "", 800, 46 * U, MIN_TEXT * U, room, 1, `scene ${sc.key}: stop ${k + 1} label`);
+          const ti = it.title ? wrap(it.title, 800, 50 * U, MIN_TEXT * U, room, 3, `scene ${sc.key}: stop ${k + 1} title`) : null;
+          const tb = it.text ? wrap(it.text, 500, 40 * U, MIN_TEXT * U, room, 3, `scene ${sc.key}: stop ${k + 1} text`) : null;
+          rows.push({ lb, ti, tb, x: cl + pad + colW * (k + 0.5), anchor: "middle", h: lb.size + (ti ? 16 * U + ti.lines.length * ti.size * 1.15 : 0) + (tb ? 12 * U + tb.lines.length * tb.size * 1.2 : 0) });
+        });
+        ch = pad + 60 * U + 50 * U + Math.max(...rows.map((r) => r.h)) + pad;
+        const y0 = place(sc, ch, "the timeline");
+        rows.forEach((r) => { r.top = y0 + pad + 110 * U; nodes.push({ x: r.x, y: y0 + pad + 30 * U }); });
+      }
+      const y = (vertical ? rows[0].top - pad : nodes[0].y - pad - 30 * U) + ch / 2;
+      const en = enter(t, early(sc, sc.start));
+      if (en.p <= 0) return;
+      let g = cardGroup(en, out, CX, y) + uiCard(CX, y, cw, ch);
+      // The rail, and the part already travelled.
+      const a = nodes[0], b = nodes[n - 1];
+      let tip = 0;
+      for (let k = 1; k < n; k++) tip += outCubic(prog(t, times[k] - 0.35, times[k]));
+      const along = (f) => { const k = Math.min(n - 2, Math.floor(f)), r = f - k; return n < 2 ? a : { x: lerp(nodes[k].x, nodes[k + 1].x, r), y: lerp(nodes[k].y, nodes[k + 1].y, r) }; };
+      const tp = along(tip);
+      g += `<line x1="${f1(a.x)}" y1="${f1(a.y)}" x2="${f1(b.x)}" y2="${f1(b.y)}" stroke="${INK}" stroke-opacity=".12" stroke-width="${f1(8 * U)}" stroke-linecap="round"/>`;
+      if (t >= times[0]) g += `<line x1="${f1(a.x)}" y1="${f1(a.y)}" x2="${f1(tp.x)}" y2="${f1(tp.y)}" stroke="${colors[Math.min(n - 1, Math.floor(tip))]}" stroke-width="${f1(8 * U)}" stroke-linecap="round"/>`;
+      items.forEach((it, k) => {
+        const nd = nodes[k], r = rows[k], reached = prog(t, times[k], times[k] + 0.3);
+        const o = onFill(colors[k], `scene ${sc.key}: stop ${k + 1} node`);
+        const pop = reached > 0 ? 1 + wobble(t - times[k], 0.3, 28, 8) : 1;
+        g += `<circle cx="${f1(nd.x)}" cy="${f1(nd.y)}" r="${f1(24 * U * pop)}" fill="${reached > 0 ? o.fill : "#fff"}" stroke="${reached > 0 ? o.fill : mix(INK, "#ffffff", 0.6)}" stroke-width="${f1(6 * U)}"/>`;
+        if (reached > 0 && reached < 1) g += `<circle cx="${f1(nd.x)}" cy="${f1(nd.y)}" r="${f1(24 * U + reached * 40 * U)}" fill="none" stroke="${o.fill}" stroke-width="${f1(4 * U)}" opacity="${(1 - reached).toFixed(3)}"/>`;
+        if (reached <= 0) return;
+        const shift = (1 - outCubic(reached)) * 30 * U;
+        g += `<g opacity="${clamp(reached * 2).toFixed(3)}" transform="translate(${f1(vertical ? shift : 0)} ${f1(vertical ? 0 : shift)})">`;
+        let yy = r.top + r.lb.size * 0.8;
+        g += textBlock(r.lb.lines, r.x, yy, r.lb.size, 800, readable(colors[k], "#ffffff", `scene ${sc.key}: stop ${k + 1} label`), { anchor: r.anchor });
+        yy += r.lb.size * 0.2;
+        if (r.ti) { yy += 16 * U + r.ti.size * 0.85; g += textBlock(r.ti.lines, r.x, yy, r.ti.size, 800, INK, { anchor: r.anchor, lh: 1.15 }); yy += (r.ti.lines.length - 1) * r.ti.size * 1.15 + r.ti.size * 0.3; }
+        if (r.tb) { yy += 12 * U + r.tb.size * 0.85; g += textBlock(r.tb.lines, r.x, yy, r.tb.size, 500, MUTED, { anchor: r.anchor, lh: 1.2 }); }
+        g += "</g>";
+      });
+      front += g + "</g>";
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      add(early(sc, sc.start) + 0.02, "swoosh", { gain: 0.45 });
+      stopTimes(sc).forEach((t0, k) => { add(t0, "pop", { pitch: 0.9 + k * 0.12, gain: 0.55 }); add(t0 + 0.04, "tick", { pitch: 1.2, gain: 0.3 }); });
+    },
+  };
+
+  /* ---- chart: a bar, line or donut chart that builds itself. */
+  const chartStart = (sc) => early(sc, when(sc, sc.at, 0.35));
+  const chartTimes = (sc) => (sc.items ?? []).map((it, k) => (it.at != null ? when(sc, it.at) : chartStart(sc) + k * (sc.kind === "donut" ? 0.2 : 0.15)));
+  function drawBars(sc, t, plot, items, colors, times, fmt) {
+    const n = items.length, slot = plot.w / n, bw = Math.min(slot * 0.62, 170 * U);
+    const labs = items.map((it, k) => wrap(it.label ?? "", 600, 42 * U, MIN_TEXT * U, slot * 0.94, 2, `scene ${sc.key}: bar ${k + 1} label`));
+    const labH = Math.max(...labs.map((l) => l.lines.length * l.size * 1.15)) + 24 * U;
+    const base = plot.y + plot.h - labH, valH = 70 * U, maxH = base - plot.y - valH;
+    const vmax = sc.max ?? (Math.max(...items.map((it) => it.value), 0) || 1);
+    let s = `<rect x="${f1(plot.x)}" y="${f1(base)}" width="${f1(plot.w)}" height="${f1(3 * U)}" fill="${INK}" opacity=".18"/>`;
+    items.forEach((it, k) => {
+      const x = plot.x + slot * (k + 0.5);
+      const gp = outCubic(prog(t, times[k], times[k] + 0.7));
+      const h = Math.max(0, it.value / vmax) * maxH * gp, r = Math.min(18 * U, bw / 4, h / 2);
+      if (h > 0.5) s += `<path d="M${f1(x - bw / 2)} ${f1(base)}V${f1(base - h + r)}Q${f1(x - bw / 2)} ${f1(base - h)} ${f1(x - bw / 2 + r)} ${f1(base - h)}H${f1(x + bw / 2 - r)}Q${f1(x + bw / 2)} ${f1(base - h)} ${f1(x + bw / 2)} ${f1(base - h + r)}V${f1(base)}Z" fill="${colors[k]}"/>`;
+      const fin = fmt(it.value, it), L = fit(fin, 800, 48 * U, slot * 0.96, 0, MIN_TEXT * U, `scene ${sc.key}: bar ${k + 1} value`);
+      if (gp > 0) s += `<text x="${f1(x)}" y="${f1(base - h - 18 * U)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(L.size)}" fill="${it.highlight ? readable(colors[k], "#ffffff", `scene ${sc.key}: bar ${k + 1} value`) : INK}" opacity="${clamp(gp * 3).toFixed(3)}">${esc(fmt(it.value * gp, it))}</text>`;
+      s += textBlock(labs[k].lines, x, base + 24 * U + labs[k].size * 0.8, labs[k].size, 600, INK, { lh: 1.15, op: clamp(prog(t, times[k] - 0.2, times[k] + 0.1)) });
+    });
+    return s;
+  }
+  function drawLine(sc, t, plot, items, color, fmt) {
+    const n = items.length, slot = plot.w / n;
+    const labs = items.map((it, k) => wrap(it.label ?? "", 600, 42 * U, MIN_TEXT * U, slot * 0.98, 2, `scene ${sc.key}: point ${k + 1} label`));
+    const labH = Math.max(...labs.map((l) => l.lines.length * l.size * 1.15)) + 24 * U;
+    const base = plot.y + plot.h - labH, top = plot.y + 90 * U;
+    const vals = items.map((it) => it.value);
+    const vmin = sc.min ?? Math.min(0, ...vals), vmax = sc.max ?? Math.max(...vals);
+    const pts = items.map((it, k) => ({ x: plot.x + slot * (k + 0.5), y: base - ((it.value - vmin) / (vmax - vmin || 1)) * (base - top) }));
+    const seg = pts.slice(1).map((p, k) => Math.hypot(p.x - pts[k].x, p.y - pts[k].y));
+    const total = seg.reduce((a, b) => a + b, 0) || 1;
+    const t0 = chartStart(sc), dur = Math.max(0.9, 0.3 * n);
+    const lp = prog(t, t0, t0 + dur);
+    let s = "";
+    [0, 0.5, 1].forEach((f) => { s += `<rect x="${f1(plot.x)}" y="${f1(lerp(base, top, f))}" width="${f1(plot.w)}" height="${f1(2 * U)}" fill="${INK}" opacity="${f === 0 ? ".18" : ".07"}"/>`; });
+    const d = pts.map((p, k) => `${k ? "L" : "M"}${f1(p.x)} ${f1(p.y)}`).join("");
+    s += `<path d="${d}L${f1(pts[n - 1].x)} ${f1(base)}L${f1(pts[0].x)} ${f1(base)}Z" fill="${color}" opacity="${(0.14 * prog(t, t0 + dur * 0.6, t0 + dur + 0.3)).toFixed(3)}"/>`;
+    if (lp > 0) s += `<path d="${d}" fill="none" stroke="${color}" stroke-width="${f1(10 * U)}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${f1(total)}" stroke-dashoffset="${f1(total * (1 - lp))}"/>`;
+    const hl = items.some((it) => it.highlight);
+    let acc = 0;
+    pts.forEach((p, k) => {
+      const reach = t0 + dur * (acc / total);
+      acc += seg[k] ?? 0;
+      const pp = outBack(prog(t, reach, reach + 0.25), 2.4);
+      if (pp > 0) s += `<circle cx="${f1(p.x)}" cy="${f1(p.y)}" r="${f1(14 * U * pp)}" fill="#fff" stroke="${color}" stroke-width="${f1(7 * U)}"/>`;
+      s += textBlock(labs[k].lines, p.x, base + 24 * U + labs[k].size * 0.8, labs[k].size, 600, INK, { lh: 1.15 });
+      const show = hl ? items[k].highlight : k === n - 1;
+      if (show && pp > 0) s += pill(fmt(items[k].value, items[k]), p.x, p.y - 62 * U, { size: 40 * U, fill: color, scale: clamp(pp, 0, 1.2), what: `scene ${sc.key}: point ${k + 1} value` });
+    });
+    return s;
+  }
+  function drawDonut(sc, t, plot, items, colors, times, fmt) {
+    const n = items.length, rowH = 72 * U;
+    let R, cx, cy, lx, ly, lw;
+    if (PORTRAIT) {
+      R = Math.min(plot.w * 0.36, (plot.h - n * rowH - 40 * U) / 2);
+      cx = CX; cy = plot.y + R + 6 * U; lx = plot.x; ly = cy + R + 50 * U; lw = plot.w;
+    } else {
+      R = Math.min(plot.h * 0.46, plot.w * 0.22);
+      cx = plot.x + R + 20 * U; cy = plot.y + plot.h / 2; lx = cx + R + 90 * U; lw = plot.x + plot.w - lx; ly = cy - (n * rowH) / 2;
+    }
+    if (R < 150 * U) problem(`scene ${sc.key}: the donut is too small; use fewer items or a shorter title.`);
+    const thick = R * 0.34, rr = R - thick / 2, C = TAU * rr;
+    const total = items.reduce((a, it) => a + Math.max(0, it.value), 0) || 1;
+    const t0 = chartStart(sc), sp = inOutCubic(prog(t, t0, t0 + 1.1));
+    let s = `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr)}" fill="none" stroke="${INK}" stroke-opacity=".07" stroke-width="${f1(thick)}"/>`;
+    let f0 = 0;
+    items.forEach((it, k) => {
+      const f = Math.max(0, it.value) / total;
+      const len = C * clamp(sp - f0, 0, f) - (sp - f0 > f - 0.001 ? 5 * U : 0);
+      if (len > 0) s += `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr)}" fill="none" stroke="${colors[k]}" stroke-width="${f1(thick)}" stroke-dasharray="${f1(len)} ${f1(C)}" stroke-dashoffset="${f1(-C * f0)}" transform="rotate(-90 ${f1(cx)} ${f1(cy)})"/>`;
+      f0 += f;
+    });
+    const fi = Math.max(0, items.findIndex((it) => it.highlight));
+    const focus = items[fi];
+    if (focus) {
+      const cp = prog(t, t0 + 0.2, t0 + 1.1);
+      const L = fit(fmt(focus.value, focus), 800, R * 0.46, rr * 1.25, 0, MIN_TEXT * U, `scene ${sc.key}: donut value`);
+      const lb = wrap(focus.label ?? "", 600, 40 * U, MIN_TEXT * U, rr * 1.2, 2, `scene ${sc.key}: donut label`);
+      const hTot = L.size * 0.75 + 16 * U + lb.lines.length * lb.size * 1.15;
+      const vy = cy - hTot / 2 + L.size * 0.75;
+      s += `<text x="${f1(cx)}" y="${f1(vy)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(L.size)}" fill="${readable(colors[fi], "#ffffff", `scene ${sc.key}: donut value`)}" opacity="${clamp(cp * 3).toFixed(3)}">${esc(fmt(focus.value * outCubic(cp), focus))}</text>`;
+      s += textBlock(lb.lines, cx, vy + 16 * U + lb.size, lb.size, 600, MUTED, { lh: 1.15, op: clamp(cp * 3) });
+    }
+    items.forEach((it, k) => {
+      const p = prog(t, times[k] + 0.3, times[k] + 0.6);
+      if (p <= 0) return;
+      const ry = ly + k * rowH + rowH / 2;
+      const val = fmt(it.value, it), vw = measure(val, 800, 44 * U);
+      const lb = wrap(it.label ?? "", 600, 44 * U, MIN_TEXT * U, lw - 60 * U - vw - 30 * U, 1, `scene ${sc.key}: legend ${k + 1}`);
+      s += `<g opacity="${clamp(p * 2).toFixed(3)}" transform="translate(${f1((1 - outCubic(p)) * 30 * U)} 0)">`;
+      s += `<circle cx="${f1(lx + 16 * U)}" cy="${f1(ry)}" r="${f1(16 * U)}" fill="${colors[k]}"/>`;
+      s += textBlock(lb.lines, lx + 56 * U, ry + lb.size * 0.35, lb.size, 600, INK, { anchor: "start" });
+      s += `<text x="${f1(lx + lw)}" y="${f1(ry + 44 * U * 0.35)}" text-anchor="end" font-family='${FONT}' font-weight="800" font-size="${f1(44 * U)}" fill="${INK}">${esc(val)}</text></g>`;
+    });
+    return s;
+  }
+  SCENES.chart = {
+    render(sc, t) {
+      titleLines(sc, t, HEAD());
+      const out = sceneOut(sc, t);
+      const items = sc.items ?? [], kind = sc.kind ?? "bar";
+      if (!items.length) return;
+      if (!["bar", "line", "donut"].includes(kind)) problem(`scene ${sc.key}: chart kind "${kind}" is not bar, line or donut.`);
+      const area = bodyArea(sc);
+      const cw = wideCard(), pad = 48 * U, left = CX - cw / 2 + pad, iw = cw - pad * 2;
+      const head = sc.title ? wrap(sc.title, 800, 56 * U, MIN_TEXT * U, iw, 2, `scene ${sc.key}: chart title`) : null;
+      const headH = head ? head.lines.length * head.size * 1.15 + 36 * U : 0;
+      const cap = sc.caption ? wrap(sc.caption, 500, 40 * U, MIN_TEXT * U, iw, 2, `scene ${sc.key}: chart caption`) : null;
+      const capH = cap ? cap.lines.length * cap.size * 1.2 + 28 * U : 0;
+      const ch = Math.min(area.bottom - area.top, (PORTRAIT ? (kind === "donut" ? 1180 : 1080) : 780) * U);
+      const y0 = place(sc, ch, "the chart", area), y = y0 + ch / 2;
+      const en = enter(t, early(sc, sc.start));
+      if (en.p <= 0) return;
+      const fmt = fmtOf(sc), times = chartTimes(sc);
+      let g = cardGroup(en, out, CX, y) + uiCard(CX, y, cw, ch);
+      if (head) g += textBlock(head.lines, left, y0 + pad + head.size * 0.8, head.size, 800, INK, { anchor: "start", lh: 1.15 });
+      const plot = { x: left, y: y0 + pad + headH, w: iw, h: ch - pad * 2 - headH - capH };
+      if (kind === "line") g += drawLine(sc, t, plot, items, col(sc.color ?? style.accent), fmt);
+      else if (kind === "donut") g += drawDonut(sc, t, plot, items, dataColors(sc, items, true), times, fmt);
+      else g += drawBars(sc, t, plot, items, dataColors(sc, items, false), times, fmt);
+      if (cap) g += textBlock(cap.lines, left, y0 + ch - pad - (cap.lines.length - 1) * cap.size * 1.2 - cap.size * 0.25, cap.size, 500, MUTED, { anchor: "start", lh: 1.2 });
+      front += g + "</g>";
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      add(early(sc, sc.start) + 0.02, "swoosh", { gain: 0.45 });
+      const t0 = chartStart(sc), items = sc.items ?? [], times = chartTimes(sc);
+      if (sc.kind === "line") {
+        const dur = Math.max(0.9, 0.3 * items.length);
+        add(t0, "rise", { dur, gain: 0.3 });
+        add(t0 + dur, "chime", { gain: 0.5 });
+      } else if (sc.kind === "donut") {
+        add(t0, "whoosh", { dur: 1.1, gain: 0.45 });
+        times.forEach((tt, k) => add(tt + 0.3, "pop", { pitch: 1 + k * 0.1, gain: 0.4 }));
+      } else {
+        times.forEach((tt, k) => add(tt + 0.55, items[k].highlight ? "coin" : "pop", { pitch: 0.9 + k * 0.1, gain: 0.45 }));
+      }
+    },
+  };
+
+  /* ---- quiz: a question, options one by one, a countdown, then the answer lights up. */
+  function quizTiming(sc) {
+    const opts = (sc.options ?? []).map((o) => (typeof o === "string" ? { text: o } : o));
+    const q = early(sc, when(sc, sc.at, 0.15));
+    const times = opts.map((o, k) => early(sc, when(sc, o.at, 0.7 + k * 0.4)));
+    const reveal = when(sc, sc.revealAt, sc.len * 0.62);
+    return { opts, q, times, reveal, countFrom: Math.max(...times, q) + 0.4 };
+  }
+  SCENES.quiz = {
+    render(sc, t) {
+      const out = sceneOut(sc, t);
+      const { opts, q, times, reveal, countFrom } = quizTiming(sc);
+      const n = opts.length, answer = sc.answer ?? 0;
+      const c = col(sc.color ?? style.accent), good = col(sc.goodColor ?? "green");
+      const cw = wideCard(), pad = 48 * U, iw = cw - pad * 2, cl = CX - cw / 2;
+      const cols = !PORTRAIT && n > 2 ? 2 : 1, gap = 24 * U;
+      const ow = (cw - (cols - 1) * gap) / cols;
+      const qs = wrap(sc.question ?? "", 800, 72 * U, MIN_TEXT * U, iw, 4, `scene ${sc.key}: question`);
+      const qH = pad + 90 * U + qs.lines.length * qs.size * 1.15 + pad * 0.7;
+      const ows = opts.map((o, k) => wrap(o.text ?? "", 700, 54 * U, MIN_TEXT * U, ow - 170 * U, 2, `scene ${sc.key}: option ${k + 1}`));
+      const oh = Math.max(128 * U, ...ows.map((w) => w.lines.length * w.size * 1.2 + 56 * U));
+      const rows = Math.ceil(n / cols);
+      const ex = sc.explain ? wrap(sc.explain, 600, 46 * U, MIN_TEXT * U, iw - 90 * U, 3, `scene ${sc.key}: explanation`) : null;
+      const exH = ex ? ex.lines.length * ex.size * 1.25 + 56 * U : 0;
+      const total = qH + 36 * U + rows * oh + (rows - 1) * gap + (ex ? 30 * U + exH : 0);
+      const y0 = place(sc, total, "the quiz");
+      // Question card.
+      const en = enter(t, q);
+      if (en.p <= 0) return;
+      const qy = y0 + qH / 2;
+      let g = cardGroup(en, out, CX, qy) + uiCard(CX, qy, cw, qH);
+      g += iconTile("question", cl + pad + 36 * U, y0 + pad + 36 * U, 72 * U, c, `scene ${sc.key}: quiz icon`);
+      g += `<text x="${f1(cl + pad + 96 * U)}" y="${f1(y0 + pad + 36 * U + 15 * U)}" font-family='${FONT}' font-weight="800" font-size="${f1(42 * U)}" fill="${readable(c, "#ffffff", `scene ${sc.key}: quiz label`)}">${esc(sc.label ?? labels.quiz)}</text>`;
+      g += textBlock(qs.lines, cl + pad, y0 + pad + 90 * U + qs.size * 0.85, qs.size, 800, INK, { anchor: "start", lh: 1.15 });
+      // Countdown ring, when there is time for one.
+      if (reveal - countFrom > 1.0 && sc.timer !== false) {
+        const cp = prog(t, countFrom, reveal), rr = 40 * U, tx = cl + cw - pad - rr, tyy = y0 + pad + 36 * U;
+        const left = Math.ceil((reveal - Math.max(t, countFrom)) - 1e-6);
+        const vis = clamp(prog(t, countFrom - 0.3, countFrom) * 3) * (1 - prog(t, reveal, reveal + 0.2));
+        if (vis > 0) {
+          g += `<g opacity="${vis.toFixed(3)}"><circle cx="${f1(tx)}" cy="${f1(tyy)}" r="${f1(rr)}" fill="none" stroke="${INK}" stroke-opacity=".1" stroke-width="${f1(9 * U)}"/>`;
+          g += `<circle cx="${f1(tx)}" cy="${f1(tyy)}" r="${f1(rr)}" fill="none" stroke="${readable(c, "#ffffff")}" stroke-width="${f1(9 * U)}" stroke-dasharray="${f1(TAU * rr * (1 - cp))} ${f1(TAU * rr)}" transform="rotate(-90 ${f1(tx)} ${f1(tyy)})"/>`;
+          g += `<text x="${f1(tx)}" y="${f1(tyy + 15 * U)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(42 * U)}" fill="${INK}">${Math.max(1, left)}</text></g>`;
+        }
+      }
+      front += g + "</g>";
+      // Options.
+      const rp = prog(t, reveal, reveal + 0.3);
+      const oy0 = y0 + qH + 36 * U;
+      opts.forEach((o, k) => {
+        const oen = enter(t, times[k], k);
+        if (oen.p <= 0) return;
+        const r = Math.floor(k / cols), cc = k % cols, inRow = Math.min(cols, n - r * cols);
+        const x = CX + (cc - (inRow - 1) / 2) * (ow + gap), y = oy0 + r * (oh + gap) + oh / 2;
+        const right = k === answer, won = rp > 0 && right, lost = rp > 0 && !right;
+        const og = onFill(good, `scene ${sc.key}: right answer`);
+        const pop = won ? 1 + wobble(t - reveal - 0.1, 0.12, 26, 7) : lost ? 1 - 0.03 * rp : 1;
+        let s = cardGroup(oen, out, x, y) + `<g transform="translate(${f1(x)} ${f1(y)}) scale(${pop.toFixed(3)}) translate(${f1(-x)} ${f1(-y)})">`;
+        s += uiCard(x, y, ow, oh, { fill: won ? og.fill : lost ? mix("#ffffff", PAPER, 0.6) : "#fff", lift: won ? rp : 0 });
+        const ts = 84 * U, tx = x - ow / 2 + 28 * U + ts / 2;
+        s += won ? iconTile("check", tx, y, ts, "#ffffff") : lost ? iconTile("x", tx, y, ts, mix(INK, "#ffffff", 0.75)) : iconTile(String.fromCharCode(65 + k), tx, y, ts, c, `scene ${sc.key}: option letter`);
+        const w = ows[k];
+        s += textBlock(w.lines, tx + ts / 2 + 30 * U, y - ((w.lines.length - 1) * w.size * 1.2) / 2 + w.size * 0.35, w.size, 700, won ? og.text : lost ? MUTED : INK, { anchor: "start", lh: 1.2 });
+        front += s + "</g></g>";
+        if (won) front += burst(t, reveal + 0.1, x + ow / 2 - 60 * U, y - oh / 2, 1200 + k, CONFETTI, 16, 240, 20 * U);
+      });
+      if (ex) {
+        const ep = prog(t, reveal + 0.5, reveal + 0.85);
+        if (ep > 0) {
+          const ey = oy0 + rows * oh + (rows - 1) * gap + 30 * U + exH / 2;
+          const eg = { p: ep, e: outBack(ep, 1.6), dy: (1 - outCubic(ep)) * 60 * U, rot: 0, op: clamp(ep * 3) };
+          let s = cardGroup(eg, out, CX, ey) + uiCard(CX, ey, cw, exH, { fill: mix(good, "#ffffff", 0.85) });
+          s += iconTile("info", cl + pad + 26 * U, ey, 52 * U, good);
+          s += textBlock(ex.lines, cl + pad + 80 * U, ey - ((ex.lines.length - 1) * ex.size * 1.25) / 2 + ex.size * 0.35, ex.size, 600, readable(INK, mix(good, "#ffffff", 0.85)), { anchor: "start", lh: 1.25 });
+          front += s + "</g>";
+        }
+      }
+    },
+    cues(sc, add) {
+      const { opts, q, times, reveal, countFrom } = quizTiming(sc);
+      add(q, "swoosh", { gain: 0.45 });
+      add(q + 0.25, "blip", { pitch: 0.9, gain: 0.4 });
+      opts.forEach((_, k) => add(times[k] + 0.05, "pop", { pitch: 0.9 + k * 0.12, gain: 0.5 }));
+      if (reveal - countFrom > 1.0 && sc.timer !== false) for (let tt = countFrom; tt < reveal - 0.2; tt += 0.5) add(tt, "tick", { pitch: 1.4, gain: 0.35 });
+      add(reveal, "chime", { gain: 0.6 });
+      add(reveal + 0.05, "sparkle", { gain: 0.5 });
+      if (sc.explain) add(reveal + 0.5, "pop", { pitch: 1.2, gain: 0.4 });
+    },
+  };
+
+  /* ---- ranking: a top list revealed from the bottom up; number one gets the spotlight. */
+  function rankTimes(sc) {
+    const items = sc.items ?? [], n = items.length, up = (sc.order ?? "up") === "up";
+    return items.map((it, k) => early(sc, it.at != null ? when(sc, it.at) : sc.start + 0.35 + (up ? n - 1 - k : k) * 0.6));
+  }
+  SCENES.ranking = {
+    render(sc, t) {
+      titleLines(sc, t, HEAD());
+      const out = sceneOut(sc, t);
+      const items = sc.items ?? [], n = items.length;
+      if (!n) return;
+      const area = bodyArea(sc), gap = 22 * U, cw = wideCard(), pad = 34 * U;
+      const rowH = Math.min(PORTRAIT ? 170 * U : 130 * U, (area.bottom - area.top - gap * (n - 1)) / n);
+      if (rowH < 110 * U) problem(`scene ${sc.key}: too many ranking rows for the frame; keep it to ${PORTRAIT ? 6 : 5}.`);
+      const y0 = place(sc, n * rowH + (n - 1) * gap, "the ranking", area);
+      const times = rankTimes(sc), fmt = fmtOf(sc);
+      const vmax = Math.max(...items.map((it) => it.value ?? 0), 0) || 1;
+      const MEDALS = ["#D9A441", "#A9B1BB", "#C4713D"];
+      items.forEach((it, k) => {
+        const p = prog(t, times[k], times[k] + 0.4);
+        if (p <= 0) return;
+        const y = y0 + k * (rowH + gap) + rowH / 2, dx = (1 - outBack(p, 1.4)) * W * 0.7 * (k % 2 ? -1 : 1);
+        const star = k === 0 ? outCubic(prog(t, times[0] + 0.35, times[0] + 0.7)) : 0;
+        const color = col(it.color ?? sc.color ?? style.accent);
+        let s = `<g opacity="${(clamp(p * 3) * (1 - out)).toFixed(3)}" transform="translate(${f1(dx)} ${f1(out * H * 0.5)})">`;
+        s += uiCard(CX, y, cw, rowH, { lift: star, stroke: star > 0.5 ? readable(color, "#ffffff") : null });
+        const bs = rowH * 0.6, bx = CX - cw / 2 + pad + bs / 2, lift = -star * 10 * U;
+        s += iconTile(String(k + 1), bx, y + lift, bs, sc.medals === false || k > 2 ? INK : MEDALS[k], `scene ${sc.key}: rank ${k + 1}`);
+        let lx = bx + bs / 2 + 28 * U;
+        if (it.icon) { s += iconTile(it.icon, lx + bs * 0.4, y + lift, bs * 0.8, color, `scene ${sc.key}: rank ${k + 1} icon`); lx += bs * 0.8 + 24 * U; }
+        const rx = CX + cw / 2 - pad;
+        const val = it.value != null ? fmt(it.value, it) : null, vw = val ? measure(val, 800, 50 * U) + 24 * U : 0;
+        const lb = wrap(it.label ?? "", 800, 54 * U, MIN_TEXT * U, rx - lx - vw, 1, `scene ${sc.key}: rank ${k + 1} label`);
+        if (val != null) {
+          const gp = outCubic(prog(t, times[k] + 0.2, times[k] + 0.9));
+          s += textBlock(lb.lines, lx, y + lift - 4 * U, lb.size, 800, INK, { anchor: "start" });
+          const bw = (rx - lx) * (it.value / vmax) * gp;
+          s += `<rect x="${f1(lx)}" y="${f1(y + lift + 22 * U)}" width="${f1(rx - lx)}" height="${f1(14 * U)}" rx="${f1(7 * U)}" fill="${INK}" opacity=".08"/>`;
+          s += `<rect x="${f1(lx)}" y="${f1(y + lift + 22 * U)}" width="${f1(Math.max(14 * U, bw))}" height="${f1(14 * U)}" rx="${f1(7 * U)}" fill="${color}"/>`;
+          s += `<text x="${f1(rx)}" y="${f1(y + lift - 4 * U)}" text-anchor="end" font-family='${FONT}' font-weight="800" font-size="${f1(50 * U)}" fill="${readable(color, "#ffffff", `scene ${sc.key}: rank ${k + 1} value`)}">${esc(fmt(it.value * gp, it))}</text>`;
+        } else s += textBlock(lb.lines, lx, y + lift + lb.size * 0.35, lb.size, 800, INK, { anchor: "start" });
+        front += s + "</g>";
+        if (k === 0 && star > 0 && star < 1) front += burst(t, times[0] + 0.4, bx, y - rowH / 2, 1300, CONFETTI, 18, 280, 20 * U);
+      });
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      const times = rankTimes(sc), up = (sc.order ?? "up") === "up";
+      times.forEach((tt, k) => { add(tt - 0.04, "swoosh", { gain: 0.45 }); add(tt + 0.3, "pop", { pitch: 0.8 + (times.length - k) * 0.1, gain: 0.5 }); });
+      if (times.length) {
+        if (up && times.length > 1) add(times[0] - 0.6, "drumroll", { dur: 0.55, gain: 0.6 });
+        add(times[0] + 0.4, "chime", { gain: 0.55 });
+        add(times[0] + 0.42, "sparkle", { gain: 0.5 });
+      }
+    },
+  };
+
+  /* ---- flip: a card shows one side (a myth, a question), then flips to the other (the fact, the answer). */
+  const flipTimes = (sc) => ({ t0: early(sc, when(sc, sc.front?.at, 0.2)), tf: when(sc, sc.back?.at, sc.len * 0.45) - 0.25 });
+  SCENES.flip = {
+    render(sc, t) {
+      titleLines(sc, t, HEAD());
+      const out = sceneOut(sc, t);
+      const sides = [sc.front ?? {}, sc.back ?? {}];
+      const cw = wideCard(), pad = 56 * U, cl = CX - cw / 2;
+      const lay = sides.map((sd, k) => wrap(sd.text ?? "", 800, (PORTRAIT ? 84 : 76) * U, MIN_TEXT * U, cw - pad * 2, 6, `scene ${sc.key}: ${k ? "back" : "front"} text`));
+      const bodyH = Math.max(...lay.map((l) => l.lines.length * l.size * 1.18));
+      const ch = Math.max(PORTRAIT ? 720 * U : 520 * U, pad * 2 + 90 * U + 60 * U + bodyH + 40 * U);
+      const y0 = place(sc, ch, "the flip card"), y = y0 + ch / 2;
+      const { t0, tf } = flipTimes(sc);
+      const en = enter(t, t0);
+      if (en.p <= 0) return;
+      const fp = prog(t, tf, tf + 0.5), ang = inOutCubic(fp) * Math.PI;
+      const k = ang > Math.PI / 2 ? 1 : 0, sd = sides[k], L = lay[k];
+      const sx = Math.max(0.001, Math.abs(Math.cos(ang))), lift = Math.sin(fp * Math.PI) * 0.08;
+      // The default colours are darkened quietly; a colour the story picks gets a note when it needs darkening.
+      const c = sd.color ? col(sd.color) : readable(col(k ? "green" : "rose"), "#ffffff");
+      let g = cardGroup(en, out, CX, y) + `<g transform="translate(${f1(CX)} ${f1(y)}) scale(${(sx * (1 + lift)).toFixed(3)} ${(1 + lift).toFixed(3)}) translate(${f1(-CX)} ${f1(-y)})">`;
+      g += uiCard(CX, y, cw, ch, { stroke: k ? readable(c, "#ffffff") : null });
+      g += iconTile(sd.icon ?? (k ? "check" : "x"), cl + pad + 45 * U, y0 + pad + 45 * U, 90 * U, c, `scene ${sc.key}: ${k ? "back" : "front"} icon`);
+      g += `<text x="${f1(cl + pad + 120 * U)}" y="${f1(y0 + pad + 45 * U + 18 * U)}" font-family='${FONT}' font-weight="800" font-size="${f1(52 * U)}" fill="${readable(c, "#ffffff", `scene ${sc.key}: ${k ? "back" : "front"} label`)}">${esc(sd.label ?? (k ? labels.fact : labels.myth))}</text>`;
+      const top = y0 + pad + 90 * U + 60 * U, room = y0 + ch - pad - top;
+      const ty = top + (room - L.lines.length * L.size * 1.18) / 2 + L.size * 0.85;
+      g += textBlock(L.lines, cl + pad, ty, L.size, 800, INK, { anchor: "start", lh: 1.18 });
+      front += g + "</g></g>";
+      if (k) front += burst(t, tf + 0.45, cl + cw - 80 * U, y0 + 20 * U, 1400, CONFETTI, 16, 240, 20 * U);
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      const { t0, tf } = flipTimes(sc);
+      add(t0, "swoosh", { gain: 0.45 });
+      add(tf, "whip", { gain: 0.5 });
+      add(tf + 0.45, "chime", { gain: 0.55 });
+    },
+  };
+
+  /* ---- definition: a dictionary card: the word, how to say it, what it means, an example. */
+  function definitionTiming(sc) {
+    const t0 = early(sc, when(sc, sc.at, 0.15));
+    const words = splitWords(sc.text);
+    const r0 = Math.max(t0 + 0.5, sc.textAt != null ? when(sc, sc.textAt) : sc.v ? sc.start + sc.voiceAt : t0 + 0.8);
+    const times = wordTimes(sc, words, r0, Math.min(2.2, words.length * 0.12));
+    const done = Math.max(r0, ...times);
+    return { t0, times, done, ex: sc.example ? when(sc, sc.exampleAt, done - sc.start + 0.4) : null };
+  }
+  SCENES.definition = {
+    render(sc, t) {
+      titleLines(sc, t, HEAD());
+      const out = sceneOut(sc, t), c = col(sc.color ?? style.accent);
+      const cw = wideCard(), pad = 56 * U, left = CX - cw / 2 + pad, iw = cw - pad * 2;
+      const wd = wrap(sc.word ?? "", 800, (PORTRAIT ? 140 : 124) * U, MIN_TITLE * U, iw, 2, `scene ${sc.key}: word`);
+      const meta = sc.phonetic || sc.kind;
+      const df = wrap(sc.text ?? "", 600, 58 * U, MIN_TEXT * U, iw, 6, `scene ${sc.key}: definition`);
+      const ex = sc.example ? wrap(sc.example, 500, 46 * U, MIN_TEXT * U, iw - 34 * U, 3, `scene ${sc.key}: example`) : null;
+      const wordH = wd.lines.length * wd.size * 1.02;
+      const ch = pad + wordH + (meta ? 76 * U : 10 * U) + 50 * U + df.lines.length * df.size * 1.25 + (ex ? 40 * U + ex.lines.length * ex.size * 1.25 : 0) + pad * 0.8;
+      const y0 = place(sc, ch, "the definition card"), y = y0 + ch / 2;
+      const { t0, times, ex: exAt } = definitionTiming(sc);
+      const en = enter(t, t0);
+      if (en.p <= 0) return;
+      let g = cardGroup(en, out, CX, y) + uiCard(CX, y, cw, ch);
+      let yy = y0 + pad;
+      wd.lines.forEach((line, k) => {
+        const L = layout(line, 800, wd.size, -0.02), base = yy + wd.size * 0.8 + k * wd.size * 1.02;
+        const bp = outCubic(prog(t, t0 + 0.35 + k * 0.1, t0 + 0.8 + k * 0.1));
+        g += `<rect x="${f1(left - 6 * U)}" y="${f1(base - wd.size * 0.3)}" width="${f1((L.width + 12 * U) * bp)}" height="${f1(wd.size * 0.36)}" rx="${f1(8 * U)}" fill="${mix(c, "#ffffff", 0.55)}"/>`;
+        g += popLine(t, L, left + L.width / 2, base, INK, t0 + 0.1 + k * 0.1, { step: 0.03, from: 60, spin: 12, seed: 71 + k });
+      });
+      yy += wordH;
+      if (meta) {
+        const mp = clamp(prog(t, t0 + 0.4, t0 + 0.7) * 2);
+        let mx = left;
+        const my = yy + 48 * U;
+        if (sc.phonetic) {
+          g += `<text x="${f1(mx)}" y="${f1(my)}" font-family='${FONT}' font-weight="500" font-size="${f1(44 * U)}" fill="${MUTED}" opacity="${mp.toFixed(3)}">${esc(sc.phonetic)}</text>`;
+          mx += measure(sc.phonetic, 500, 44 * U) + 30 * U;
+        }
+        if (sc.kind) g += `<g opacity="${mp.toFixed(3)}">${pill(sc.kind, mx + (measure(sc.kind, 800, 40 * U) + 56 * U) / 2, my - 14 * U, { size: 40 * U, fill: c, what: `scene ${sc.key}: word kind` })}</g>`;
+        yy += 76 * U;
+      } else yy += 10 * U;
+      g += `<rect x="${f1(left)}" y="${f1(yy + 20 * U)}" width="${f1(iw)}" height="${f1(2 * U)}" fill="${INK}" opacity=".1"/>`;
+      yy += 50 * U;
+      g += wordsBlock(df.lines, left, yy + df.size * 0.85, df.size, 600, INK, t, times, { lh: 1.25 });
+      yy += df.lines.length * df.size * 1.25;
+      if (ex) {
+        const ep = prog(t, exAt, exAt + 0.35);
+        if (ep > 0) {
+          const eh = ex.lines.length * ex.size * 1.25;
+          g += `<g opacity="${clamp(ep * 2).toFixed(3)}" transform="translate(${f1((1 - outCubic(ep)) * 30 * U)} 0)">`;
+          g += `<rect x="${f1(left)}" y="${f1(yy + 40 * U)}" width="${f1(8 * U)}" height="${f1(eh)}" rx="${f1(4 * U)}" fill="${c}"/>`;
+          g += textBlock(ex.lines, left + 34 * U, yy + 40 * U + ex.size * 0.9, ex.size, 500, MUTED, { anchor: "start", lh: 1.25 }) + "</g>";
+        }
+      }
+      front += g + "</g>";
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      const { t0, ex } = definitionTiming(sc);
+      add(t0, "swoosh", { gain: 0.45 });
+      add(t0 + 0.15, "pop", { pitch: 1, gain: 0.5 });
+      if (ex != null) add(ex, "tap", { gain: 0.45 });
+    },
+  };
+
+  /* ---- profile: a person, place or thing: avatar, name, role and a few facts, one by one. */
+  const factTimes = (sc) => (sc.facts ?? []).map((f, k) => early(sc, when(sc, f.at, 0.9 + k * 0.6)));
+  SCENES.profile = {
+    render(sc, t) {
+      titleLines(sc, t, HEAD());
+      const out = sceneOut(sc, t), c = col(sc.color ?? style.accent);
+      const n = (sc.facts ?? []).length;
+      // Landscape puts the facts beside the person; portrait stacks them underneath.
+      const side = !PORTRAIT && n > 0;
+      const cw = side ? wideCard() : Math.min(W * 0.88, (PORTRAIT ? 960 : 1200) * U), pad = 50 * U, cl = CX - cw / 2;
+      const idW = side ? cw * 0.38 - pad * 2 : cw - pad * 2, idX = side ? cl + cw * 0.19 : CX;
+      const fx = side ? cl + cw * 0.38 : cl + pad, fw = side ? cw * 0.62 - pad : cw - pad * 2;
+      const d = (PORTRAIT ? 230 : 170) * U;
+      const nm = wrap(sc.name ?? "", 800, 84 * U, MIN_TEXT * U, idW, 2, `scene ${sc.key}: name`);
+      const rl = sc.role ? wrap(sc.role, 500, 46 * U, MIN_TEXT * U, idW, 2, `scene ${sc.key}: role`) : null;
+      const facts = (sc.facts ?? []).map((f, k) => wrap(f.text ?? "", 600, 50 * U, MIN_TEXT * U, fw - 140 * U, 2, `scene ${sc.key}: fact ${k + 1}`));
+      const fh = facts.map((f) => Math.max(96 * U, f.lines.length * f.size * 1.2 + 34 * U));
+      const idH = d + 40 * U + nm.lines.length * nm.size * 1.1 + (rl ? 12 * U + rl.lines.length * rl.size * 1.25 : 0);
+      const fH = n ? fh.reduce((a, b) => a + b, 0) + 14 * U * (n - 1) : 0;
+      const ch = side ? pad * 2 + Math.max(idH, fH) : pad * 2 + idH + (n ? 40 * U + fH : 0);
+      const y0 = place(sc, ch, "the profile card"), y = y0 + ch / 2;
+      const idTop = side ? y - idH / 2 : y0 + pad, fTop = side ? y - fH / 2 : y0 + pad + idH + 40 * U;
+      const t0 = early(sc, when(sc, sc.at, 0.15));
+      const en = enter(t, t0);
+      if (en.p <= 0) return;
+      // The card goes behind the media layer, so a photo can sit on it.
+      back += cardGroup(en, out, CX, y, false) + uiCard(CX, y, cw, ch) + "</g>";
+      const ay = idTop + d / 2, ap = outBack(prog(t, t0 + 0.1, t0 + 0.45), 2);
+      if (sc.media && ap > 0 && out < 1) media.push({ id: sc.media, variant: "avatar", t: t - sc.start, x: idX, y: ay + en.dy + out * H * 0.5, w: d * ap, h: d * ap, circle: true, ring: c, ringW: 10 * U });
+      let g = cardGroup(en, out, CX, y, false);
+      if (!sc.media && ap > 0) {
+        const o = onFill(c, `scene ${sc.key}: initials`);
+        g += `<g transform="translate(${f1(idX)} ${f1(ay)}) scale(${ap.toFixed(3)})"><circle r="${f1(d / 2)}" fill="${o.fill}"/>`;
+        g += sc.icon && ICONS[sc.icon] ? `<path d="${ICONS[sc.icon]}" transform="translate(${f1(-d * 0.28)} ${f1(-d * 0.28)}) scale(${((d * 0.56) / 24).toFixed(4)})" fill="none" stroke="${o.text}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+          : `<text y="${f1(d * 0.14)}" text-anchor="middle" font-family='${FONT}' font-weight="800" font-size="${f1(d * 0.38)}" fill="${o.text}">${esc(sc.initials ?? initialsOf(sc.name))}</text>`;
+        g += "</g>";
+      }
+      let yy = idTop + d + 40 * U;
+      nm.lines.forEach((line, k) => { g += popLine(t, layout(line, 800, nm.size, -0.02), idX, yy + nm.size * 0.8 + k * nm.size * 1.1, INK, t0 + 0.3 + k * 0.1, { step: 0.025, from: 50, spin: 10, seed: 81 + k }); });
+      yy += nm.lines.length * nm.size * 1.1;
+      if (rl) g += textBlock(rl.lines, idX, yy + 12 * U + rl.size * 0.85, rl.size, 500, MUTED, { lh: 1.25, op: clamp(prog(t, t0 + 0.5, t0 + 0.8) * 2) });
+      yy = fTop;
+      const times = factTimes(sc), tint2 = mix(c, "#ffffff", 0.88);
+      facts.forEach((f, k) => {
+        const p = prog(t, times[k], times[k] + 0.35), h = fh[k], cy = yy + h / 2;
+        if (p > 0) {
+          g += `<g opacity="${clamp(p * 2).toFixed(3)}" transform="translate(${f1((1 - outCubic(p)) * 40 * U)} 0)">`;
+          g += `<rect x="${f1(fx)}" y="${f1(yy)}" width="${f1(fw)}" height="${f1(h)}" rx="${f1(26 * U)}" fill="${tint2}"/>`;
+          g += iconTile(sc.facts[k].icon ?? "check", fx + 56 * U, cy, 60 * U, c, `scene ${sc.key}: fact ${k + 1} icon`);
+          g += textBlock(f.lines, fx + 110 * U, cy - ((f.lines.length - 1) * f.size * 1.2) / 2 + f.size * 0.35, f.size, 600, readable(INK, tint2), { anchor: "start", lh: 1.2 }) + "</g>";
+        }
+        yy += h + 14 * U;
+      });
+      front += g + "</g>";
+    },
+    cues(sc, add) {
+      titleCues(sc, add);
+      const t0 = early(sc, when(sc, sc.at, 0.15));
+      add(t0, "swoosh", { gain: 0.45 });
+      add(t0 + 0.2, "pop", { pitch: 0.9, gain: 0.55 });
+      factTimes(sc).forEach((tt, k) => add(tt, "tap", { pitch: 1 + k * 0.1, gain: 0.5 }));
+    },
+  };
+
   /* ---- list: a title and items that pop in one by one (explainers, steps, tips). */
   SCENES.list = {
     render(sc, t) {
@@ -1286,7 +1992,7 @@
     }
     return c.sort((a, b) => a.t - b.t);
   }
-  const DEFAULT_MOOD = { pileup: "tension", title: "calm", fan: "calm", card: "groove", chat: "calm", cards: "groove", stats: "groove", checklist: "groove", compare: "groove", prompt: "groove", list: "groove", grid: "run", logo: "outro" };
+  const DEFAULT_MOOD = { pileup: "tension", title: "calm", fan: "calm", card: "groove", chat: "calm", cards: "groove", stats: "groove", checklist: "groove", compare: "groove", prompt: "groove", quote: "calm", timeline: "groove", chart: "groove", quiz: "tension", ranking: "run", flip: "groove", definition: "calm", profile: "groove", list: "groove", grid: "run", logo: "outro" };
   function buildMeta() {
     return {
       duration: DURATION, beat: BEAT, bpm: 60 / BEAT, width: W, height: H,

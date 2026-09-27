@@ -1,6 +1,6 @@
 ---
 name: motion-video
-description: Make playful, polished motion-graphics videos (explainers, product promos, teasers, announcements, tutorials, social clips for TikTok/Reels/Shorts or 16:9) from a single story.json. Kinetic typography, media cards, lists, grids and logo endings, voices synced word by word from any text-to-speech tool (such as an ElevenLabs account connected through Composio), 8 synthesized music styles and 43 sound effects, rendered frame-exact to MP4. Use when someone asks for an animated video, a motion graphic, a short vertical video, or a narrated explainer.
+description: Make playful, polished motion-graphics videos (explainers on any topic, product promos, teasers, announcements, tutorials, social clips for TikTok/Reels/Shorts or 16:9) from a single story.json. Kinetic typography and drawn UI cards (quizzes, timelines, charts, rankings, myth/fact flips, definitions, profiles, quotes, feature cards, stats, checklists), voices synced word by word from any text-to-speech tool (such as an ElevenLabs account connected through Composio), 8 synthesized music styles and 43 sound effects, rendered frame-exact to MP4. Use when someone asks for an animated video, a motion graphic, a short vertical video, or a narrated explainer.
 ---
 
 # Motion video
@@ -15,7 +15,8 @@ engine/make.mjs      every command below
 docs/story-schema.md every story.json field: read it before writing one
 docs/sounds.md       the 8 music styles and 43 sound effects
 docs/voices.md       real ElevenLabs voice ids (English and French) and models
-examples/            app-launch (EN, 9:16), astuces-ia (FR, 9:16), feature-launch (16:9, no voice): all UI cards
+examples/            app-launch (EN, 9:16), astuces-ia (FR, 9:16), feature-launch (16:9, no voice),
+                     coffee-explainer (EN, 9:16, any-topic explainer): all drawn UI cards
 ```
 
 ## Get the engine
@@ -71,7 +72,19 @@ One idea per scene, one short spoken line per scene:
 | All together | `grid` | The whole range. |
 | Ending | `logo` | Name, tagline, URL. |
 
+Explainers on any topic (history, science, money, health, a place, a person)
+use these beats instead:
+
+| Beat | Scene type | Job |
+|---|---|---|
+| Hook: a question | `quiz` or `flip` | Make the viewer guess in the first 3 to 6 s. |
+| Who, what, when | `profile`, `timeline`, `definition` | A person or thing, its story, a key term. |
+| Numbers | `chart` (bar, line, donut), `ranking`, `stats` | Data, shares, a top list. |
+| Surprises | `flip` | Myths and facts, questions and answers. |
+| Takeaway | `quote`, `checklist`, `title` | A line to remember, what to do. |
+
 Drop what you don't need: an announcement can be `title` → `list` → `logo`.
+Never repeat the same scene type more than twice in a row.
 
 - Spoken lines: 1.5 to 4 s (4 to 12 words). A scene lasts as long as its line.
 - On-screen text is shorter than speech: a bubble echoes the line in fewer
@@ -84,7 +97,8 @@ Drop what you don't need: an announcement can be `title` → `list` → `logo`.
 
 ### 3. Media
 Most videos need none: `cards`, `stats`, `checklist`, `compare`, `prompt`,
-`chat`, `list`, `pileup`, `title` and `logo` are drawn UI. Prefer them.
+`quiz`, `timeline`, `chart`, `ranking`, `flip`, `definition`, `profile`,
+`quote`, `chat`, `list`, `pileup`, `title` and `logo` are drawn UI. Prefer them.
 `card`, `fan` and `grid` need media: a video, an image or a folder of frames.
 Portrait art (about 9:16) for cards, a square close-up (`"avatar"`) for grids;
 loops of 2 to 4 s are ideal. Use the user's screens, product shots and photos,

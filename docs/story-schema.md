@@ -36,7 +36,7 @@ my-video/
 | `autoSfx` | boolean | `true` | `false` keeps only the sounds scenes place by hand (see `sounds`). |
 | `voices` | `{who: voiceId}` | | Notes for you: the voice id each speaker uses in your text-to-speech tool, so every take matches. The engine does not read it. |
 | `media` | `{id: path}` or `{id: {full, avatar}}` | | Videos (mp4/mov/webm/gif), images (png/jpg/webp) or folders of frames. `full` is used on cards, `avatar` (square) in grids; each falls back to the other. |
-| `labels` | `{now, number, prompt, assistant}` | `{now: "now", number: "No.", prompt: "PROMPT", assistant: "AI assistant"}` | Small UI words, for other languages (e.g. `{"now": "maintenant", "number": "N°", "assistant": "Assistant IA"}`). |
+| `labels` | `{now, number, prompt, assistant, quiz, myth, fact}` | `{now: "now", number: "No.", prompt: "PROMPT", assistant: "AI assistant", quiz: "Quiz", myth: "Myth", fact: "Fact"}` | Small UI words, for other languages (e.g. `{"now": "maintenant", "number": "N°", "assistant": "Assistant IA", "myth": "Idée reçue", "fact": "En vrai"}`). |
 | `scenes` | array | | The video, in order. |
 
 ## Readability (enforced)
@@ -67,12 +67,12 @@ show in its first 0.8 s, because frame 0 is the thumbnail.
 
 | Field | Meaning |
 |---|---|
-| `type` | `pileup`, `title`, `chat`, `cards`, `stats`, `checklist`, `compare`, `prompt`, `fan`, `card`, `list`, `grid`, `logo`. |
+| `type` | `pileup`, `title`, `chat`, `cards`, `stats`, `checklist`, `compare`, `prompt`, `quiz`, `timeline`, `chart`, `ranking`, `flip`, `definition`, `profile`, `quote`, `fan`, `card`, `list`, `grid`, `logo`. |
 | `id` | Optional name; also the voice file name. Default `s1`, `s2`… |
 | `voice` | `{ "who": "narrator", "text": "What is said.", "at": 0.35 }`. `at` is when speech starts, in seconds from the scene start. |
 | `duration` | Minimum length in seconds. With a voice, the scene is at least as long as the line plus `pad` (0.55 s). Always rounded up to whole beats. |
 | `background` | Colour name or hex. Tinted towards paper unless `"tint": false`. `"paper"` for plain. Changes wipe in as a circle. |
-| `mood` | Music for this scene: `tension`, `calm`, `groove`, `run`, `outro`, `none`. Defaults: pileup tension, title and fan calm, card and list groove, grid run, logo outro. |
+| `mood` | Music for this scene: `tension`, `calm`, `groove`, `run`, `outro`, `none`. Defaults: pileup and quiz tension; title, fan, quote and definition calm; ranking and grid run; logo outro; the rest groove. |
 | `sounds` | Extra sound effects: `[{ "at": "word", "kind": "whoosh", "gain": 1, "pitch": 1, "dur": 0.5 }]`, or `{ "at": 1.2, "file": "sounds/hit.wav" }` for your own. 43 kinds, listed with audio in [sounds.md](sounds.md). |
 | `autoSfx` | `false` turns off the effects this scene type plays by itself. |
 
@@ -156,9 +156,13 @@ The card squashes slightly on every spoken word.
 
 These scenes are drawn UI: white cards, icon tiles, numbers, checkboxes. They
 need no images or videos. Title lines (same as `title`, in `lines`) sit above
-them. Icons are drawn line icons named `check x clock bolt star bell chart
-calendar chat lock heart target mail list users search up rocket`; any other
-short text (1 to 3 characters) is shown as a letter or number in the tile.
+them. Icons are drawn line icons (any other short text, 1 to 3 characters, is
+shown as a letter or number in the tile):
+
+- UI: `check x up down search settings link file pencil list chat mail bell lock shield eye info question warning`
+- Time and data: `clock calendar hourglass chart target star trophy flag`
+- Things: `home car plane food cup music camera play phone code money cart gift book school idea rocket bolt fitness`
+- Nature and people: `globe pin leaf sun moon cloud drop fire heart users`
 
 #### `cards`: feature cards
 Cards slide in one by one at their `at`; the one being talked about lifts,
@@ -216,6 +220,123 @@ is centred in the frame.
 { "type": "prompt", "color": "idee", "title": "Le vide-cerveau",
   "prompt": "Voici tout ce que j'ai en tête : […]. Trie en 4 listes.", "caption": "Tu vides ta tête, l'IA range." }
 ```
+
+### Explainer cards (any topic, no media needed)
+
+More drawn UI, made for explaining anything: history, science, money, health,
+a recipe, a place, a person. Title lines (`lines`) sit above the ones that
+take them. Text that appears as it is said (`quote`, `definition`) follows the
+voice word by word when the voice reads the same words.
+
+#### `quiz`: a question with an answer reveal
+The question card, options popping in one by one (A, B, C…), a countdown ring
+while the viewer thinks (when there is more than a second before the reveal),
+then the right option turns green with confetti, the others grey out, and an
+optional explanation card slides in. A strong hook: ask in the first scene.
+
+```json
+{ "type": "quiz", "question": "Which country drinks the most coffee per person?",
+  "options": [ { "text": "Brazil", "at": "Brazil" }, { "text": "Finland", "at": "Finland" }, { "text": "Italy", "at": "Italy" } ],
+  "answer": 1, "revealAt": "Finland#2", "explain": "About 12 kg per person, every year." }
+```
+`options` may be plain strings. `answer` is the index of the right one (from
+0). `revealAt` defaults to 62% of the scene. `goodColor` (default green),
+`color` (letters, icon), `timer: false`, `label` (default `labels.quiz`).
+2 to 4 options, one short line each; on 16:9 they sit in two columns.
+
+#### `timeline`: dates or steps on a line
+A card with a line that draws itself from stop to stop; each stop's dot fills
+and its label, title and text slide in at its `at`. Vertical on 9:16 (or with
+`"vertical": true`), horizontal on 16:9.
+
+```json
+{ "type": "timeline", "lines": [ { "text": "A short history", "at": 0.1 } ],
+  "items": [ { "label": "1554", "title": "Istanbul's first coffee house", "text": "Optional detail", "at": "Istanbul", "color": "leaf" } ] }
+```
+`label` is short (a year, "Step 1", "9:00"). 3 to 5 stops; titles two lines
+at most, texts two (three on 16:9).
+
+#### `chart`: bar, line or donut
+A card with an optional `title` and `caption` (a source, "approximate
+figures"). Values format like `stats` (`prefix`, `suffix`, `decimals`, set on
+the scene or per item).
+
+- `"kind": "bar"`: bars grow at their `at` (default one after the other from
+  the scene's `at`), values count up above them, labels under. Mark one with
+  `"highlight": true` and the others dim. 2 to 6 bars on 9:16, up to 8 on 16:9.
+- `"kind": "line"`: the line draws from left to right from the scene's `at`,
+  dots pop as it passes, the highlighted points (default: the last one) get a
+  value pill. `min`/`max` set the scale (default from 0).
+- `"kind": "donut"`: the ring sweeps round, the highlighted item (default the
+  first) shows big in the centre, a legend lists every slice with its value.
+  Slices take the palette in turn unless they set `color`. 2 to 5 slices.
+
+```json
+{ "type": "chart", "kind": "bar", "title": "Coffee per person, per year", "caption": "Approximate figures", "suffix": " kg",
+  "items": [ { "label": "Finland", "value": 12, "highlight": true, "at": "Finland" }, { "label": "Norway", "value": 9.9, "at": "Norway" } ] }
+```
+
+#### `ranking`: a top list
+Rows in rank order (number one first). By default they are revealed from the
+bottom up (`"order": "down"` reveals number one first), with a drumroll before
+number one, which lifts with an outline and confetti. Ranks 1 to 3 get gold,
+silver and bronze tiles (`"medals": false` for plain). With `value`, each row
+has a bar and a number that count up.
+
+```json
+{ "type": "ranking", "lines": [ { "text": "Biggest growers", "at": 0.1 } ], "decimals": 1,
+  "items": [ { "label": "Brazil", "value": 3.4, "at": "Brazil" }, { "label": "Vietnam", "value": 1.8, "at": "Vietnam" } ] }
+```
+Items may set `icon` and `color`. 3 to 6 rows on 9:16, 5 on 16:9.
+
+#### `flip`: myth and fact, question and answer
+A card shows its `front`, then flips over at the `back`'s `at` to show the
+back, with confetti. Default labels `labels.myth` / `labels.fact`, default
+icons ✗ / ✓, default colours rose / green.
+
+```json
+{ "type": "flip",
+  "front": { "label": "Myth", "text": "Coffee dehydrates you.", "at": "Myth" },
+  "back": { "label": "Fact", "text": "A normal cup hydrates you almost as well as water.", "at": "Actually" } }
+```
+Each side: `label`, `text` (6 lines at most), `icon`, `color`, `at`. Use it
+for myths, "what people think / what is true", a question and its answer, or
+a riddle.
+
+#### `definition`: a dictionary card
+The word pops in with a highlighter under it, then how to say it and what
+kind of word it is, then the definition word by word, then an example under a
+coloured bar.
+
+```json
+{ "type": "definition", "word": "Crema", "phonetic": "/ˈkreɪ.mə/", "kind": "noun",
+  "text": "The golden foam on top of a fresh espresso.", "example": "No crema? Your beans are probably stale.", "exampleAt": "No" }
+```
+`textAt` (default: when the voice starts), `exampleAt`, `color`. Also good
+for a term, an acronym, a law or a rule.
+
+#### `profile`: a person, place or thing
+A card with a round avatar (initials, an `icon`, or a photo with `media`),
+the name, a role, then facts that slide in one by one with their icons.
+Facts sit under the name on 9:16 and beside it on 16:9.
+
+```json
+{ "type": "profile", "name": "Kaldi", "role": "Goat herder, Ethiopia (legend)", "icon": "leaf", "color": "leaf",
+  "facts": [ { "icon": "eye", "text": "Saw his goats dance after eating red berries", "at": "dancing" } ] }
+```
+`initials` overrides the automatic ones. 2 to 4 facts, two lines each.
+
+#### `quote`: a quote card
+A big quote mark, the quote appearing word by word as it is said, words
+listed in `highlight` getting a highlighter band, then the author with their
+initials.
+
+```json
+{ "type": "quote", "text": "A cup of coffee commits one to forty years of friendship.",
+  "highlight": ["forty", "friendship"], "author": "Turkish proverb", "role": "Optional line" }
+```
+`at` (card), `textAt`, `authorAt`, `color`, `initials`. 8 lines at most on
+9:16, 5 on 16:9. Quote real people only with a quote they really said.
 
 ### `chat`: a chat window
 A chat window whose messages appear one by one: the user's in the accent colour
