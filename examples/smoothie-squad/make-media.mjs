@@ -13,7 +13,7 @@ import { spawnSync, execFileSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
+import { launchBrowser } from "../../engine/browser.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "media");
@@ -112,7 +112,7 @@ function character(name, f, view) {
   </g></svg>`;
 }
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 mkdirSync(OUT, { recursive: true });
 for (const name of Object.keys(FRUITS)) {
   for (const [variant, w, h] of [["full", 720, 1280], ["avatar", 360, 360]]) {

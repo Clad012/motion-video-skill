@@ -20,30 +20,36 @@ MP4. Vertical for TikTok, Reels and Shorts, or 16:9 and square.
 - **Nothing to license.** 8 music styles and 43 sound effects, all
   synthesized ([listen to them](docs/sounds.md)); the example characters are
   drawn by a script. Bring your own media, music and effects if you like.
-- **Voices from anywhere.** Generate with an ElevenLabs key, or drop in voice
-  files from any tool or connected account; word timings come from
-  ElevenLabs, faster-whisper, or an estimate.
+- **Voices from any tool.** Make each line with the text-to-speech you have
+  (an ElevenLabs account connected through Composio, another TTS, a
+  recording), drop the files in `voices/`, and the engine times every word
+  with faster-whisper.
 - **Agent-ready.** [`SKILL.md`](SKILL.md) is a step-by-step playbook for an AI
   agent, including how to review stills and verify audio by transcription,
   since agents cannot watch or listen.
 
 ## Quick start
 
-Requirements: Node 18+, Python 3.9+. ffmpeg is optional (a Python package
-provides one).
+Requirements: Node 18+, Python 3.9+, and Google Chrome, Chromium or Edge
+installed (the engine draws frames with the browser you already have). ffmpeg
+is optional: a Python package provides one.
 
 ```bash
 git clone https://github.com/Clad012/motion-video-skill.git
 cd motion-video-skill
-npm install && npx playwright install chromium
+npm install
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+node engine/make.mjs doctor          # checks everything, prints the fix for anything missing
 
 node engine/make.mjs examples/smoothie-squad all
 # → examples/smoothie-squad/out/smoothie-squad.mp4
 ```
 
-The example ships with its voices already generated, so no API key is needed
-to render it. The text-only 16:9 example needs nothing at all:
+No browser at all? Set `CHROME_PATH` to one, or `npx playwright install chromium`.
+For voices you bring yourself, `pip install faster-whisper` gives precise word
+timings and lets `check` verify the mix.
+
+The example ships with its voices. The text-only 16:9 example needs nothing:
 
 ```bash
 node engine/make.mjs examples/minimal all
@@ -54,17 +60,16 @@ node engine/make.mjs examples/minimal all
 1. Copy an example folder: `cp -r examples/minimal my-video`.
 2. Put your videos and images in `my-video/media/` and list them under `media`.
 3. Write the scenes in `my-video/story.json` ([reference](docs/story-schema.md)).
-4. Add voices (optional): give scenes a `voice`, then either set
-   `ELEVENLABS_API_KEY` (pick voices with `.venv/bin/python engine/voices.py
-   my-video --list` and map speakers under `voices`), or put your own files in
-   `my-video/voices/<scene id>.mp3` and let the `voices` step time them
-   (`pip install faster-whisper` for precise timings).
+4. Add voices (optional): give scenes a `voice` with its line, make each line
+   with your text-to-speech tool, save it as `my-video/voices/<scene id>.mp3`,
+   and let the `voices` step time it. Until a file exists, the scene uses
+   estimated timings and stays silent.
 5. Pick a music style and sprinkle effects: `"music": { "style": "lofi" }`,
    and per scene `"sounds": [{ "at": "word", "kind": "cash" }]`.
 6. Iterate on stills, then render:
 
 ```bash
-node engine/make.mjs my-video voices     # generate or refresh voice lines
+node engine/make.mjs my-video voices     # time the voice files
 node engine/make.mjs my-video stills     # timeline, warnings, build/contact-sheet.jpg
 node engine/make.mjs my-video all        # the MP4 (add --fps 30 for fast drafts)
 node engine/make.mjs my-video check      # transcribe the final mix, line by line
@@ -100,11 +105,11 @@ the last card shrinks into its seat in a grid, the grid gathers into the logo.
 ## How it works
 
 ```
-story.json ─┬─ voices.py ──► voices/*.mp3 + word timings (ElevenLabs, or estimated)
+story.json ─┬─ voices.py ──► word timings for voices/*.mp3 (faster-whisper, or estimated)
             │
             └─ make.mjs prepare ──► build/  (player.html, engine.js, media frames)
                      │
-                     ├─ Chromium + engine.js: timeline from voices, render(t) per frame
+                     ├─ your Chrome + engine.js: timeline from voices, render(t) per frame
                      │        ├─► build/frames-out/*.jpg
                      │        └─► build/cues.json + meta.json (every sound, every scene mood)
                      │
@@ -114,24 +119,26 @@ story.json ─┬─ voices.py ──► voices/*.mp3 + word timings (ElevenLabs
 ```
 
 - **Picture**: SVG for type and shapes, a canvas for media, stacked in one page
-  and screenshotted per frame. Media is pre-extracted to JPEG frames because
-  headless Chromium cannot decode H.264, and so seeking is exact.
+  and screenshotted per frame by the Chrome on your machine (driven by
+  playwright-core, which downloads nothing). Media is pre-extracted to JPEG
+  frames, so seeking is exact and any format ffmpeg reads works.
 - **Sound**: music follows each scene's mood (`tension`, `calm`, `groove`,
   `run`, `outro`) in the story's style, tempo and key; 43 effects (pops,
   whooshes, risers, impacts, cash registers, record scratches, a ta-da…) are
   placed on the renderer's cues and on any `sounds` you add; music ducks under
   voices. Catalogue with audio: [docs/sounds.md](docs/sounds.md); regenerate it
   with `node engine/make.mjs gallery`.
-- **Voices**: ElevenLabs text-to-speech with character timestamps, so on-screen
-  events can sync to words; `--check-lines` and `check` run speech-to-text to
-  confirm what was actually said.
+- **Voices**: files from any text-to-speech tool; the engine finds when each
+  word is said (faster-whisper, or an ElevenLabs alignment file) so on-screen
+  events sync to words, and `check` transcribes the final mix to confirm every
+  line is audible.
 
 ## Example credits
 
 - Characters in `examples/smoothie-squad` are drawn by
   [`make-media.mjs`](examples/smoothie-squad/make-media.mjs); regenerate them
   with `npm run example:media`.
-- Example voices were generated with ElevenLabs default voices.
+- Example voices were made with ElevenLabs' default voices.
 - Font: [Geist](https://fonts.google.com/specimen/Geist) (SIL Open Font License), loaded from Google Fonts.
 - "Smoothie Squad" and "Sleep Notes" are made-up names; `example.com` is a reserved example domain.
 

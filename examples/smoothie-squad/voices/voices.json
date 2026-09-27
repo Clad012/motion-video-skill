@@ -2,8 +2,6 @@
  "chaos": {
   "text": "Snooze. Meetings. An empty fridge... rough morning?",
   "who": "narrator",
-  "voiceId": "JBFqnCBsd6RMkjVDRZzb",
-  "model": "eleven_v3",
   "file": "voices/chaos.mp3",
   "speechStart": 0.0,
   "speechEnd": 5.282,
@@ -43,13 +41,16 @@
     "start": 4.862,
     "end": 5.282
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510856.2416365,
+   0
   ]
  },
  "reveal": {
   "text": "Relax. The Smoothie Squad is here!",
   "who": "narrator",
-  "voiceId": "JBFqnCBsd6RMkjVDRZzb",
-  "model": "eleven_v3",
   "file": "voices/reveal.mp3",
   "speechStart": 0.0,
   "speechEnd": 2.16,
@@ -84,13 +85,16 @@
     "start": 1.904,
     "end": 2.16
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510857.76952,
+   0
   ]
  },
  "banana": {
   "text": "[excited] Peel me, blend me, let's go!",
   "who": "banana",
-  "voiceId": "TX3LPaxmHKxFdv7VOQHJ",
-  "model": "eleven_v3",
   "file": "voices/banana.mp3",
   "speechStart": 0.269,
   "speechEnd": 2.24,
@@ -125,13 +129,16 @@
     "start": 1.813,
     "end": 2.24
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510859.1633987,
+   0
   ]
  },
  "strawberry": {
   "text": "[giggles] Did someone say pink?",
   "who": "strawberry",
-  "voiceId": "cgSgspJ2msm6clMCkdW9",
-  "model": "eleven_v3",
   "file": "voices/strawberry.mp3",
   "speechStart": 0.75,
   "speechEnd": 2.4,
@@ -156,13 +163,16 @@
     "start": 1.888,
     "end": 2.4
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510860.379038,
+   0
   ]
  },
  "kiwi": {
   "text": "Oi! Don't judge me by my fuzz, mate!",
   "who": "kiwi",
-  "voiceId": "IKne3meq5aSn9XLyUdCD",
-  "model": "eleven_v3",
   "file": "voices/kiwi.mp3",
   "speechStart": 0.0,
   "speechEnd": 2.32,
@@ -207,13 +217,16 @@
     "start": 2.224,
     "end": 2.32
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510861.7992904,
+   0
   ]
  },
  "blueberry": {
   "text": "Small? I prefer... concentrated.",
   "who": "blueberry",
-  "voiceId": "pFZP5JQG7iQjIQuC4Bku",
-  "model": "eleven_v3",
   "file": "voices/blueberry.mp3",
   "speechStart": 0.0,
   "speechEnd": 3.6,
@@ -238,13 +251,16 @@
     "start": 2.64,
     "end": 3.6
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510863.4261785,
+   0
   ]
  },
  "mango": {
   "text": "Add me. Trust me. You won't regret it.",
   "who": "mango",
-  "voiceId": "iP95p4xoKVk53GoZ742B",
-  "model": "eleven_v3",
   "file": "voices/mango.mp3",
   "speechStart": 0.0,
   "speechEnd": 2.24,
@@ -289,13 +305,16 @@
     "start": 2.133,
     "end": 2.24
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510864.9527462,
+   0
   ]
  },
  "orange": {
   "text": "[cheerfully] Squeeze the day!",
   "who": "orange",
-  "voiceId": "FGY2WhTYpPnrIDTdsKH5",
-  "model": "eleven_v3",
   "file": "voices/orange.mp3",
   "speechStart": 0.58,
   "speechEnd": 1.36,
@@ -315,13 +334,16 @@
     "start": 1.0,
     "end": 1.36
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510866.3179295,
+   0
   ]
  },
  "recipe": {
   "text": "Pick two fruits. Add a splash of milk. Blend for thirty seconds.",
   "who": "narrator",
-  "voiceId": "JBFqnCBsd6RMkjVDRZzb",
-  "model": "eleven_v3",
   "file": "voices/recipe.mp3",
   "speechStart": 0.0,
   "speechEnd": 4.48,
@@ -386,13 +408,16 @@
     "start": 3.92,
     "end": 4.48
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510868.711029,
+   0
   ]
  },
  "squad": {
   "text": "Six fruits. One blender. Endless mornings.",
   "who": "narrator",
-  "voiceId": "JBFqnCBsd6RMkjVDRZzb",
-  "model": "eleven_v3",
   "file": "voices/squad.mp3",
   "speechStart": 0.0,
   "speechEnd": 3.68,
@@ -427,13 +452,16 @@
     "start": 3.182,
     "end": 3.68
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510870.4275901,
+   0
   ]
  },
  "end": {
   "text": "Smoothie Squad. Blend happy.",
   "who": "narrator",
-  "voiceId": "JBFqnCBsd6RMkjVDRZzb",
-  "model": "eleven_v3",
   "file": "voices/end.mp3",
   "speechStart": 0.0,
   "speechEnd": 2.08,
@@ -458,6 +486,11 @@
     "start": 1.747,
     "end": 2.08
    }
+  ],
+  "method": "alignment",
+  "stamp": [
+   1790510871.7192183,
+   0
   ]
  }
 }

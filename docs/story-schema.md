@@ -34,9 +34,7 @@ my-video/
 | `music.volume` | 0–1 | 0.55 | Music level (sound effects and voices are separate). |
 | `music.enabled` / `music.sfx` | boolean | `true` | Turn music or sound effects off. |
 | `autoSfx` | boolean | `true` | `false` keeps only the sounds scenes place by hand (see `sounds`). |
-| `voices` | `{who: voiceId}` | | ElevenLabs voice ids per speaker. List yours: `python engine/voices.py <project> --list`. |
-| `voiceSettings.model` | string | `"eleven_v3"` | `eleven_v3` understands audio tags like `[excited]`; `eleven_multilingual_v2` is steadier. |
-| `voiceSettings.stability`, `.similarity` | 0–1 | 0.5, 0.8 | Passed to ElevenLabs. `eleven_v3` accepts stability 0, 0.5 or 1. |
+| `voices` | `{who: voiceId}` | | Notes for you: the voice id each speaker uses in your text-to-speech tool, so every take matches. The engine does not read it. |
 | `media` | `{id: path}` or `{id: {full, avatar}}` | | Videos (mp4/mov/webm/gif), images (png/jpg/webp) or folders of frames. `full` is used on cards, `avatar` (square) in grids; each falls back to the other. |
 | `labels` | `{now, number}` | `{now: "now", number: "No."}` | Small UI words, for other languages. |
 | `scenes` | array | | The video, in order. |
@@ -54,16 +52,18 @@ my-video/
 | `sounds` | Extra sound effects: `[{ "at": "word", "kind": "whoosh", "gain": 1, "pitch": 1, "dur": 0.5 }]`, or `{ "at": 1.2, "file": "sounds/hit.wav" }` for your own. 43 kinds, listed with audio in [sounds.md](sounds.md). |
 | `autoSfx` | `false` turns off the effects this scene type plays by itself. |
 
-### Voice files made elsewhere
+### Voice files
 
-`voices/<scene id>.mp3` (or `.wav`, `.m4a`, `.ogg`) is used as that scene's
-voice when you put it there yourself: from another text-to-speech tool, an
-ElevenLabs account connected through an integration, or a recording. The
-`voices` step times its words, from `voices/<scene id>.alignment.json` when
-present (the ElevenLabs with-timestamps response), else with faster-whisper
-when installed (`pip install faster-whisper`; `WHISPER_MODEL=small` by default),
-else by estimating across the speech it detects. `voice.text` must still hold
-what is said: word sync and checks rely on it. `--import` re-times every file.
+The engine does not generate speech. Make each scene's line with any
+text-to-speech tool (for example an ElevenLabs account connected through
+Composio) or record it, and save it as `voices/<scene id>.mp3` (or `.wav`,
+`.m4a`, `.ogg`). The `voices` step times its words: from
+`voices/<scene id>.alignment.json` when present (the ElevenLabs
+with-timestamps response), else with faster-whisper when installed
+(`WHISPER_MODEL`: a model name such as `small`, or a local model folder), else
+by estimating across the speech it detects. `voice.text` must hold exactly
+what is said: word sync and checks rely on it. A scene without a file gets
+estimated timings and stays silent. `--import` re-times every file.
 
 ### Timing values (`at`, `until`)
 

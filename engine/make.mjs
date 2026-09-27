@@ -4,29 +4,49 @@
  *
  *   node engine/make.mjs <project> all            everything below, in order
  *   node engine/make.mjs <project> prepare        build/ folder, media frames
- *   node engine/make.mjs <project> voices         ElevenLabs lines (or timed placeholders)
+ *   node engine/make.mjs doctor                   what is installed and what is missing
+ *   node engine/make.mjs <project> voices         time the voice files in voices/ (or placeholders)
  *   node engine/make.mjs <project> stills [t...]  PNG stills + contact sheet, timeline, warnings
  *   node engine/make.mjs <project> frames         every frame, for the video
  *   node engine/make.mjs <project> audio          music + sound effects + voices -> soundtrack.wav
  *   node engine/make.mjs <project> encode         out/<name>.mp4 + a contact sheet of it
- *   node engine/make.mjs <project> check          transcribes the final mix (ElevenLabs), per line
+ *   node engine/make.mjs <project> check          transcribes the final mix (faster-whisper), per line
  *   node engine/make.mjs gallery [folder]         every sound effect and music style as MP3s (docs/sounds)
  *
- * Options: --fps 30 (draft speed; default story.format.fps or 60), --force (redo voices).
- * Env: FFMPEG, PYTHON, ELEVENLABS_API_KEY.
+ * Options: --fps 30 (faster; default story.format.fps or 60), --import (re-time every voice file).
+ * Env: FFMPEG, PYTHON, CHROME_PATH, WHISPER_MODEL.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { findBrowser, launchBrowser, NO_BROWSER } from "./browser.mjs";
+
 const ENGINE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(ENGINE, "..");
 const args = process.argv.slice(2);
 const flag = (name) => { const i = args.indexOf(`--${name}`); if (i < 0) return null; const v = args[i + 1]; args.splice(i, v && !v.startsWith("--") ? 2 : 1); return v ?? true; };
 const fpsFlag = flag("fps");
-const force = flag("force");
+const reimport = flag("import");
 const [projectArg, step = "all", ...rest] = args;
+if (projectArg === "doctor") {
+  // Everything the engine needs, found or missing, with the fix for each.
+  const ok = (good, label, fix) => { console.log(`${good ? "✓" : "✗"} ${label}${good ? "" : `  →  ${fix}`}`); return good; };
+  const py = [process.env.PYTHON, join(ROOT, ".venv/bin/python"), "python3", "python"].find((p) => p && spawnSync(p, ["-c", "import sys"]).status === 0);
+  const pyHas = (mod) => py && spawnSync(py, ["-c", `import ${mod}`]).status === 0;
+  const ff = process.env.FFMPEG || (spawnSync("ffmpeg", ["-version"]).status === 0 ? "ffmpeg" : pyHas("imageio_ffmpeg") ? "imageio-ffmpeg" : null);
+  let all = true;
+  all &= ok(Number(process.versions.node.split(".")[0]) >= 18, `Node ${process.versions.node}`, "Node 18 or newer");
+  all &= ok(existsSync(join(ROOT, "node_modules/playwright-core")), "Node dependencies", `npm install (in ${ROOT})`);
+  all &= ok(Boolean(findBrowser()), `Browser: ${findBrowser() ?? "none"}`, NO_BROWSER);
+  all &= ok(Boolean(py), `Python: ${py ?? "none"}`, "Python 3");
+  all &= ok(pyHas("numpy") && pyHas("scipy"), "numpy + scipy", "pip install -r requirements.txt");
+  all &= ok(Boolean(ff), `ffmpeg: ${ff ?? "none"}`, "install ffmpeg, or pip install imageio-ffmpeg");
+  ok(pyHas("faster_whisper"), "faster-whisper (optional: precise voice timings, voice checks)", "pip install faster-whisper");
+  console.log(all ? "ready" : "missing pieces above");
+  process.exit(all ? 0 : 1);
+}
 if (projectArg === "gallery") {
   // Every sound effect and music style, as MP3s, into docs/sounds (or a folder you name).
   const py = [process.env.PYTHON, join(ROOT, ".venv/bin/python"), "python3"].find((p) => p && spawnSync(p, ["-c", "import numpy"]).status === 0);
@@ -128,9 +148,7 @@ function prepare() {
 
 /* ---------------------------------------------------------------- browser */
 async function withPage(fn) {
-  let chromium;
-  try { ({ chromium } = await import("playwright")); } catch { throw new Error("Playwright missing: npm install && npx playwright install chromium"); }
-  const browser = await chromium.launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage({ viewport: { width: W, height: H } });
     page.on("pageerror", (e) => console.error("page error:", e.message));
@@ -209,7 +227,7 @@ function encode() {
 /* ---------------------------------------------------------------- steps */
 const steps = {
   prepare,
-  voices: () => { run(python(), [join(ENGINE, "voices.py"), PROJECT, ...(force ? ["--force"] : [])]); prepare(); },
+  voices: () => { run(python(), [join(ENGINE, "voices.py"), PROJECT, ...(reimport ? ["--import"] : [])]); prepare(); },
   stills: () => stills(rest),
   frames,
   audio,
